@@ -24,6 +24,7 @@ image/fluxgen/
 image/小克表情包/
 image/通用表情包/
 image/邵神韵表情包/
+image/jinaai/
 # 其他 image 子目录如果也是动态生成的，也应该考虑加入
 
 # IDE and OS specific files

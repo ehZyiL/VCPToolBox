@@ -1,0 +1,60 @@
+{
+  "manifestVersion": "1.0.0",
+  "name": "JinaAI",
+  "displayName": "Jina AI 搜索与阅读工具",
+  "version": "2.1.0",
+  "description": "集成 Jina AI Search Foundation APIs 的多功能工具，提供网页内容提取、网络搜索和事实检查功能。已配置智能默认参数以优化AI处理效果，包括默认Token预算、Markdown格式输出等。支持批量串行调用以提高效率。",
+  "author": "VCP Team",
+  "pluginType": "synchronous",
+  "entryPoint": {
+    "type": "nodejs",
+    "command": "node JinaAI.js"
+  },
+  "communication": {
+    "protocol": "stdio",
+    "timeout": 60000
+  },
+  "configSchema": {
+    "JINA_API_KEY": {
+      "type": "string",
+      "description": "Jina AI API 密钥，从 https://jina.ai/?sui=apikey 获取免费密钥",
+      "required": false
+    },
+    "JINA_READER_USE_TOKEN": {
+      "type": "string",
+      "description": "Reader API 是否使用 token 认证，设置为 'true' 启用（提高效率），'false' 不使用（默认）",
+      "default": "false",
+      "required": false
+    },
+    "DebugMode": {
+      "type": "string",
+      "description": "调试模式开关，设置为 'true' 启用详细日志输出",
+      "default": "false",
+      "required": false
+    }
+  },
+  "capabilities": {
+    "invocationCommands": [
+      {
+        "commandIdentifier": "reader",
+        "description": "📖 Jina AI Reader - 智能网页内容提取工具，支持多种输出格式和高级参数配置。已优化AI处理效果，支持内容净化和截图功能。\n\n🎯 主要功能:\n- 网页内容提取和转换\n- HTML内容直接处理\n- 网页截图（首屏/全页）\n- 智能内容净化（移除HTML/CSS/JS）\n- 高级参数支持\n\n📝 参数说明:\n- url (字符串, 必需): 网页URL，支持别名: URL/link/webpage\n- html (字符串, 可选): 直接处理HTML内容\n- format (字符串, 可选): 输出格式，默认markdown\n  • markdown: Markdown格式文本\n  • html: HTML格式文本\n  • text: 纯文本格式\n  • screenshot: 首屏截图\n  • pageshot: 全页截图\n- cleanContent (布尔值, 可选): 启用内容净化，默认true\n- targetSelector (字符串, 可选): 提取特定CSS选择器内容\n- removeSelector (字符串, 可选): 移除特定元素\n- withGeneratedAlt (布尔值, 可选): 生成图片alt描述\n- tokenBudget (数字, 可选): Token预算，默认100000\n- timeout (数字, 可选): 超时时间(秒)，默认30\n\n调用格式:\n<<<[TOOL_REQUEST]>>>\ntool_name:「始」reader「末」,\nurl:「始」https://example.com「末」,\nformat:「始」markdown「末」\n<<<[END_TOOL_REQUEST]>>>",
+        "example": "<<<[TOOL_REQUEST]>>>\ntool_name:「始」JinaAI「末」,\ncommand:「始」reader「末」,\nurl:「始」https://docs.anthropic.com/zh-CN/docs/claude-code/tutorials「末」,\nremoveSelector:「始」nav, footer「末」,\ncleanContent:「始」true「末」\n<<<[END_TOOL_REQUEST]>>>"
+      },
+      {
+        "commandIdentifier": "search",
+        "description": "🔍 Jina AI Search - 智能网络搜索工具，支持多种搜索引擎和高级搜索操作符。已优化搜索结果质量和AI处理效果。\n\n🎯 主要功能:\n- 多引擎网络搜索\n- 高级搜索操作符\n- 地理语言设置\n- 文件类型过滤\n- 搜索结果净化\n\n📝 参数说明:\n- query (字符串, 必需): 搜索查询词，支持别名: q/keyword/search\n- count (数字, 可选): 结果数量，最多20，默认10\n- type (字符串, 可选): 搜索类型 web/images/news，默认web\n- provider (字符串, 可选): 搜索引擎 google/bing，默认google\n- gl (字符串, 可选): 国家代码，如 us/cn\n- hl (字符串, 可选): 语言代码，如 en/zh\n- site (数组/字符串, 可选): 限制搜索域名\n- filetype (数组/字符串, 可选): 文件类型过滤\n- cleanContent (布尔值, 可选): 启用结果净化，默认true\n\n调用格式:\n<<<[TOOL_REQUEST]>>>\ntool_name:「始」search「末」,\nquery:「始」搜索内容「末」,\ncount:「始」5「末」\n<<<[END_TOOL_REQUEST]>>>",
+        "example": "<<<[TOOL_REQUEST]>>>\ntool_name:「始」JinaAI「末」,\ncommand:「始」search「末」,\ncount:「始」5「末」,\nsite:「始」github.com,stackoverflow.com「末」\n<<<[END_TOOL_REQUEST]>>>"
+      },
+      {
+        "commandIdentifier": "factcheck",
+        "description": "✅ Jina AI Fact Check - 智能事实验证工具，基于可靠来源验证陈述的真实性。提供详细的验证结果和参考来源。\n\n🎯 主要功能:\n- 事实陈述验证\n- 可信度评分\n- 参考来源提供\n- 详细验证报告\n\n📝 参数说明:\n- statement (字符串, 必需): 需要验证的陈述，支持别名: fact/claim/text\n\n调用格式:\n<<<[TOOL_REQUEST]>>>\ntool_name:「始」factcheck「末」,\nstatement:「始」需要验证的陈述「末」\n<<<[END_TOOL_REQUEST]>>>",
+        "example": "<<<[TOOL_REQUEST]>>>\ntool_name:「始」JinaAI「末」,\ncommand:「始」factcheck「末」,\nstatement:「始」地球围绕太阳公转「末」\n<<<[END_TOOL_REQUEST]>>>"
+      },
+      {
+        "commandIdentifier": "JinaAI",
+        "description": "🌐 Jina AI 多功能工具 - 统一接口，支持所有功能的批量串行调用。适合需要组合使用多种功能的复杂场景。\n\n🎯 支持功能:\n- Reader: 网页内容提取（支持截图、内容净化）\n- Search: 网络搜索（支持高级操作符）\n- FactCheck: 事实验证（基于可靠来源）\n- 批量串行调用（一次执行多个操作）\n\n📝 单一功能使用:\n通过 command 参数指定功能类型：\n- command: reader - 网页内容提取\n- command: search - 网络搜索  \n- command: factcheck - 事实验证\n\n🔄 批量串行调用:\n使用数字后缀区分多个命令和参数：\n• 基本格式: command1, command2, command3...\n• 参数格式: url1, query2, statement3...\n• 执行顺序: 按数字顺序依次执行\n• 错误处理: 单个操作失败不影响其他操作\n\n💡 批量操作示例:\n研究工作流:\ncommand1:「始」search「末」, query1:「始」AI发展历史「末」, count1:「始」5「末」,\ncommand2:「始」reader「末」, url2:「始」https://wiki.com/ai「末」, format2:「始」markdown「末」,\ncommand3:「始」factcheck「末」, statement3:「始」AI概念出现在1956年「末」\n\n内容对比:\ncommand1:「始」reader「末」, url1:「始」https://site1.com「末」, cleanContent1:「始」true「末」,\ncommand2:「始」reader「末」, url2:「始」https://site2.com「末」, cleanContent2:「始」true「末」\n\n截图+内容:\ncommand1:「始」reader「末」, url1:「始」https://example.com「末」, format1:「始」pageshot「末」,\ncommand2:「始」reader「末」, url2:「始」https://example.com「末」, format2:「始」markdown「末」\n\n调用格式:\n<<<[TOOL_REQUEST]>>>\ntool_name:「始」JinaAI「末」,\ncommand:「始」reader「末」,\nurl:「始」https://example.com「末」\n<<<[END_TOOL_REQUEST]>>>",
+        "example": "<<<[TOOL_REQUEST]>>>\ntool_name:「始」JinaAI「末」,\ncommand1:「始」search「末」,\nquery1:「始」Python教程「末」,\ncommand2:「始」reader「末」,\nurl2:「始」https://python.org「末」\n<<<[END_TOOL_REQUEST]>>>"
+      }
+    ]
+  }
+}
