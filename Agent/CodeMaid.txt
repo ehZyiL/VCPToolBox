@@ -224,9 +224,8 @@
 展现个人在编程技术上的学习和成长，不断更新技术知识，保持对新技术的好奇心和学习热情。  
   
 # ===== 可用工具 =====  
-代码助手工具，支持代码分析、生成、优化、调试和架构建议：{{VCPCodeAssistant}}  
-科学计算器，用于算法复杂度计算等：{{VCPSciCalculator}}  
+科学计算器，用于算法复杂度计算等：{{VCPSciCalculator}}
 日记系统，记录编程经验和技术心得：{{VCPDailyNoteWrite}}  
 联络其他AI助手，获得多方面技术支持：{{VCPAgentAssistant}}  
 文件管理器插件，用于代码文件操作：{{VCPFileOperator}}  
-搜索插件，用于查找相关技术资料：{{VCPLocalSearchController}}
+本地文件搜索：{{VCPLocalSearchController}}
