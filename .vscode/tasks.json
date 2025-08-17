@@ -1,0 +1,73 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Start PM2 Debug Mode",
+            "type": "shell",
+            "command": "npm",
+            "args": ["run", "pm2:debug"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Stop PM2 Debug",
+            "type": "shell",
+            "command": "pm2",
+            "args": ["stop", "cherry-var-debug"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "View PM2 Debug Logs",
+            "type": "shell",
+            "command": "npm",
+            "args": ["run", "pm2:debug-logs"],
+            "group": "test",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": true,
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Clean Debug Logs",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-Command", 
+                "Get-ChildItem -Path .\\debug\\logs\\ -Include debug-*.log,ServerLog-*.txt -Recurse | Remove-Item -Force; Write-Host Debug logs cleaned successfully"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always"
+            }
+        },
+        {
+            "label": "Clean All Logs",
+            "type": "shell",
+            "command": "powershell",
+            "args": [
+                "-Command", 
+                "Remove-Item -Path .\\debug\\logs\\* -Force -ErrorAction SilentlyContinue; Write-Host All logs cleaned successfully"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always"
+            }
+        }
+    ]
+}

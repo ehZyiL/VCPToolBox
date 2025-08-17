@@ -1,0 +1,161 @@
+{
+  "version": "0.2.0",
+  "inputs": [
+    {
+      "id": "pluginName",
+      "type": "promptString",
+      "description": "Enter the name of the plugin to debug (e.g., JinaAI, FluxGen)",
+      "default": "JinaAI"
+    }
+  ],
+  "configurations": [
+    {
+      // 直接启动服务器 - 用于开发环境调试
+      "name": "🚀 Launch Server (Direct)",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/server.js",
+      "env": {
+        "NODE_ENV": "development",
+        // 开发环境
+        "DEBUG": "*",
+        // 启用所有调试信息
+        "DebugMode": "true"
+        // 自定义调试模式
+      },
+      "console": "integratedTerminal",
+      // 使用集成终端
+      "restart": true,
+      // 支持自动重启
+      "runtimeArgs": [
+        "--nolazy"
+        // 禁用延迟编译，提高调试体验
+      ],
+      "skipFiles": [
+        "<node_internals>/**",
+        // 跳过 Node.js 内部文件
+        "node_modules/**"
+        // 跳过第三方模块
+      ],
+      "stopOnEntry": false,
+      // 不在入口处停止
+      "cwd": "${workspaceFolder}",
+      // 工作目录
+      "outputCapture": "console"
+      // 捕获控制台输出
+    },
+    {
+      // 附加到 PM2 调试进程 - 用于生产环境调试
+      "name": "🔗 Attach to PM2 Debug",
+      "type": "node",
+      "request": "attach",
+      // 附加模式，不启动新进程
+      "port": 9229,
+      // 调试端口，需要与 PM2 启动时的端口一致
+      "restart": true,
+      // 支持重新附加
+      "localRoot": "${workspaceFolder}",
+      // 本地代码根目录
+      "remoteRoot": "${workspaceFolder}",
+      // 远程代码根目录（本地调试时相同）
+      "skipFiles": [
+        "<node_internals>/**",
+        "node_modules/**"
+      ],
+      "trace": true
+      // 启用详细跟踪信息
+    },
+    {
+      // 启动时立即断点 - 用于调试启动过程
+      "name": "🐛 Launch with Breakpoint on Start",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/server.js",
+      "env": {
+        "NODE_ENV": "development",
+        "DEBUG": "*",
+        "DebugMode": "true"
+      },
+      "console": "integratedTerminal",
+      "restart": true,
+      "runtimeArgs": [
+        "--nolazy"
+      ],
+      "skipFiles": [
+        "<node_internals>/**",
+        "node_modules/**"
+      ],
+      "stopOnEntry": true,
+      // 在程序入口处自动停止
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      // 插件专用调试 - 只显示插件相关的调试信息
+      "name": "🧪 Debug with Specific Plugin",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/server.js",
+      "env": {
+        "NODE_ENV": "development",
+        "DEBUG": "plugin:*",
+        // 只显示插件相关的调试信息
+        "DebugMode": "true",
+        "ShowVCP": "true"
+        // 显示 VCP 相关信息
+      },
+      "console": "integratedTerminal",
+      "restart": true,
+      "runtimeArgs": [
+        "--nolazy"
+      ],
+      "skipFiles": [
+        "<node_internals>/**",
+        "node_modules/**"
+      ]
+    },
+    {
+      "name": "🔧 Debug Plugin (Standalone)",
+      "type": "node",
+      "request": "launch",
+      "name": "🔧 Debug Plugin (Standalone)",
+      "program": "${workspaceFolder}/debug/debug-plugin.js",
+      "args": [
+        "${input:pluginName}"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "skipFiles": [
+        "<node_internals>/**",
+        "node_modules/**"
+      ],
+      "preLaunchTask": "Clean Debug Logs"
+    },
+    {
+      // VCP 服务器标准调试 - 推荐的主要调试配置
+      "type": "node",
+      "request": "launch",
+      "name": "🚀 Launch VCP Server",
+      "program": "${workspaceFolder}/server.js",
+      "env": {
+        "NODE_ENV": "development",
+        // 开发环境
+        "DebugMode": "true",
+        // 启用调试模式
+        "ShowVCP": "true"
+        // 显示 VCP 相关信息
+      },
+      "console": "integratedTerminal",
+      "restart": true,
+      // 支持热重启
+      "runtimeArgs": [
+        "--nolazy"
+      ],
+      "skipFiles": [
+        "<node_internals>/**",
+        "node_modules/**"
+      ],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
