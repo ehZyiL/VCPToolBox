@@ -96,61 +96,72 @@ fate_check_number: 「始」number「末」, // 可选字段，作为占卜师�
 使用div元素构建一个“牌桌”来展现命运检定的数字，在占卜工具返回结果后，在牌桌上展示卡牌，并为卡牌添加一定的交互效果。
 
 
-6. JinaAI 搜索与阅读工具 - 集成 Jina AI Search Foundation APIs 的多功能工具，支持多命令调用和批量操作
-
-🌐 网页内容提取 (Reader) - 智能提取网页内容，支持截图和内容净化：
-专用命令（推荐）：
+6. JinaAI 搜索与阅读工具
+🌐 网页内容提取 (Reader/read_url) - 智能提取网页内容，支持截图和高级选择器：
+基础调用：
 tool_name:「始」JinaAI「末」,
-command:「始」reader「末」,
+command:「始」read_url「末」, // 或 "reader" (别名)
 url:「始」(必需) 要提取内容的网页URL「末」,
-format:「始」(可选) 输出格式，默认"markdown"「末」,
+format:「始」(可选) 输出格式，默认"default"「末」,
+  • "default": 默认优化格式
   • "markdown": Markdown格式文本
   • "html": HTML格式文本
   • "text": 纯文本格式
-  • "screenshot": 首屏截图，返回第一屏的图片
-  • "pageshot": 全页截图，返回完整页面截图（推荐用于截图）
-cleanContent:「始」(可选) 启用内容净化，默认true，自动移除HTML/CSS/JS「末」,
-html:「始」(可选) 直接处理HTML内容，无需URL「末」,
-targetSelector:「始」(可选) 提取特定CSS选择器内容，如 ".content"「末」,
+  • "screenshot": 首屏截图
+  • "pageshot": 全页截图（推荐用于截图）
+
+高级参数：
+targetSelector:「始」(可选) 提取特定CSS选择器内容，如 ".content"，别名: selector「末」,
 removeSelector:「始」(可选) 移除特定元素，如 "nav, footer, .ads"「末」,
-withGeneratedAlt:「始」(可选) 生成图片alt描述，默认true「末」,
-tokenBudget:「始」(可选) Token预算限制，默认100000「末」,
-timeout:「始」(可选) 超时时间(秒)，默认30「末」
+waitForSelector:「始」(可选) 等待特定元素加载完成「末」,
+withLinksSummary:「始」(可选) 生成链接摘要，别名: gatherLinks「末」,
+withImagesSummary:「始」(可选) 生成图片摘要，别名: gatherImages「末」,
+withGeneratedAlt:「始」(可选) 生成图片alt描述，别名: imageCaption「末」,
+withIframe:「始」(可选) 处理iframe内容，别名: enableIframe「末」,
+withShadowDom:「始」(可选) 处理Shadow DOM，别名: enableShadowDom「末」,
+tokenBudget:「始」(可选) Token预算限制「末」,
+timeout:「始」(可选) 超时时间(秒)「末」,
+noCache:「始」(可选) 禁用缓存，别名: no_cache「末」,
+browserLocale:「始」(可选) 浏览器语言，别名: locale「末」
 
-通用命令：
-tool_name:「始」JinaAI「末」,
-command:「始」reader「末」,
-url:「始」网页URL「末」,
-format:「始」输出格式「末」
-
-🔍 网络搜索 (Search) - 智能网络搜索，支持高级搜索操作符：
-专用命令（推荐）：
+🔍 网络搜索 (Search) - 智能网络搜索，支持高级搜索操作符和过滤：
+基础调用：
 tool_name:「始」JinaAI「末」,
 command:「始」search「末」,
-count:「始」(可选) 结果数量，最多20，默认10「末」,
-site:「始」(可选) 限制搜索域名，如 "github.com, stackoverflow.com"「末」,
-filetype:「始」(可选) 文件类型过滤，如 "pdf, doc"「末」,
+query:「始」(必需) 搜索查询词，别名: q/keyword「末」,
+format:「始」(可选) 输出格式，默认"default"「末」,
+  • "default": 默认JSON格式
+  • "screenshot": 搜索结果页截图
+  • "pageshot": 全页截图
+
+搜索过滤参数：
+site:「始」(可选) 限制搜索域名，如 "github.com"「末」,
+filetype:「始」(可选) 文件类型过滤，如 "pdf,doc"「末」,
+ext:「始」(可选) 文件扩展名过滤「末」,
+intitle:「始」(可选) 标题包含关键词「末」,
+loc:「始」(可选) 地理位置过滤「末」,
 gl:「始」(可选) 国家代码，如 "us", "cn"「末」,
-hl:「始」(可选) 语言代码，如 "en", "zh-cn"「末」,
-cleanContent:「始」(可选) 启用结果净化，默认true「末」
+page:「始」(可选) 分页偏移量「末」,
 
-通用命令：
+高级参数：
+withFavicons:「始」(可选) 包含网站图标「末」,
+engine:「始」(可选) 搜索引擎选择「末」,
+browserLocale:「始」(可选) 浏览器语言，别名: locale「末」,
+tokenBudget:「始」(可选) Token预算限制「末」,
+timeout:「始」(可选) 超时时间(秒)「末」,
+noCache:「始」(可选) 禁用缓存，别名: no_cache「末」
+
+✅ 事实验证 (Grounding/ground_statement) - 基于权威来源验证事实陈述：
+基础调用：
 tool_name:「始」JinaAI「末」,
-command:「始」search「末」,
-query:「始」搜索内容「末」
+command:「始」ground_statement「末」, // 或 "factcheck" (别名)
+statement:「始」(必需) 需要验证的事实陈述，别名: claim/fact/text「末」,
 
-✅ 事实检查 (Fact Check) - 验证事实陈述准确性：
-专用命令（推荐）：
-tool_name:「始」JinaAI「末」,
-command:「始」factcheck「末」,
-statement:「始」(必需) 需要验证的事实陈述「末」
+高级参数：
+references:「始」(可选) 指定参考来源，别名: refs「末」,
+noCache:「始」(可选) 禁用缓存，别名: no_cache「末」
 
-通用命令：
-tool_name:「始」JinaAI「末」,
-command:「始」factcheck「末」,
-statement:「始」验证陈述「末」
-
-🔄 批量串行调用 - 一次执行多个操作，提高工作效率：
+🔄 批量串行调用：
 基本语法：使用数字后缀区分不同命令和参数
 tool_name:「始」JinaAI「末」,
 command1:「始」第一个操作「末」,
@@ -160,45 +171,55 @@ command2:「始」第二个操作「末」,
 command3:「始」第三个操作「末」,
 参数名3:「始」第三个操作的参数「末」
 
-📋 批量操作实用示例：
+📋 实用工作流示例：
 
-研究工作流（搜索+提取+验证）：
+🔬 研究工作流（搜索+提取+验证）：
 tool_name:「始」JinaAI「末」,
 command1:「始」search「末」,
 query1:「始」人工智能发展历史「末」,
-count1:「始」5「末」,
-command2:「始」reader「末」,
-url2:「始」https://en.wikipedia.org/wiki/Artificial_intelligence「末」,
+site1:「始」wikipedia.org「末」,
+command2:「始」read_url「末」,
+url2:「始」https://en.wikipedia.org/wiki/AI「末」,
 format2:「始」markdown「末」,
-cleanContent2:「始」true「末」,
+targetSelector2:「始」.mw-parser-output「末」,
+command3:「始」ground_statement「末」,
+statement3:「始」人工智能概念首次提出于1956年达特茅斯会议「末」
 
-多网页内容获取：
+📊 多源内容对比：
 tool_name:「始」JinaAI「末」,
-command1:「始」reader「末」,
-url1:「始」https://site1.com「末」,
-format1:「始」markdown「末」,
-command2:「始」reader「末」,
-url2:「始」https://site2.com「末」,
-format2:「始」markdown「末」,
-command3:「始」reader「末」,
-url3:「始」https://site3.com「末」,
-format3:「始」markdown「末」
+command1:「始」read_url「末」,
+url1:「始」https://site1.com/article「末」,
+targetSelector1:「始」.content「末」,
+removeSelector1:「始」nav,footer「末」,
+command2:「始」read_url「末」,
+url2:「始」https://site2.com/article「末」,
+targetSelector2:「始」.main「末」,
+removeSelector2:「始」.sidebar「末」
 
-截图+内容提取组合：
+📸 截图+内容提取组合：
 tool_name:「始」JinaAI「末」,
-command1:「始」reader「末」,
+command1:「始」read_url「末」,
 url1:「始」https://example.com「末」,
 format1:「始」pageshot「末」,
-command2:「始」reader「末」,
+command2:「始」read_url「末」,
 url2:「始」https://example.com「末」,
 format2:「始」markdown「末」,
-cleanContent2:「始」true「末」
+removeSelector2:「始」nav,footer,.ads「末」,
+withLinksSummary2:「始」true「末」
 
-💡 智能特性：
-- 参数别名支持 (url/URL/link, query/q/search等)
-- 自动类型转换 ("true"→true, "30"→30)
-- 逗号分隔字符串转数组 ("a,b,c"→["a","b","c"])
-- 错误隔离：批量操作中单个失败不影响其他操作
+🔍 深度搜索分析：
+tool_name:「始」JinaAI「末」,
+command1:「始」search「末」,
+query1:「始」机器学习算法比较「末」,
+site1:「始」arxiv.org「末」,
+filetype1:「始」pdf「末」,
+command2:「始」search「末」,
+query2:「始」machine learning algorithms comparison「末」,
+site2:「始」github.com「末」,
+command3:「始」search「末」,
+query3:「始」机器学习实战案例「末」,
+site3:「始」medium.com「末」
+
 
 三.VCP通讯插件
 1.Agent通讯器，用于联络别的Agent！

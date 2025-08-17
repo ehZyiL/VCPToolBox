@@ -59,11 +59,11 @@
 
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import path from 'path';
 import { readFileSync, writeFileSync } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = path.dirname(__filename);
 
 // 解析命令行参数
 const args = process.argv.slice(2);
@@ -107,7 +107,7 @@ JinaAI Plugin 统一测试套件
 // 加载环境变量
 function loadEnvFromFile() {
     try {
-        const envContent = readFileSync('config.env', 'utf8');
+        const envContent = readFileSync(path.join(__dirname, 'config.env'), 'utf8');
         const env = {};
 
         envContent.split('\n').forEach(line => {
@@ -207,7 +207,7 @@ const testSuites = {
             input: {
                 command: "reader",
                 url: "https://example.com",
-                format: "markdown"
+                format: "pageshot"
             }
         },
         {
@@ -453,7 +453,14 @@ async function runTestSuite() {
     try {
         const envVars = loadEnvFromFile();
         if (!envVars.JINA_API_KEY) {
-            throw new Error('JINA_API_KEY not found in config.env');
+            const foundKeys = Object.keys(envVars);
+            let debugMessage = 'JINA_API_KEY not found in config.env.';
+            if (foundKeys.length > 0) {
+                debugMessage += ` Found these keys instead: [${foundKeys.join(', ')}]`;
+            } else {
+                debugMessage += ' No keys were loaded from the file. Please ensure it is saved with UTF-8 encoding and contains JINA_API_KEY=your_key.';
+            }
+            throw new Error(debugMessage);
         }
         console.log('✅ 配置检查通过');
     } catch (error) {
