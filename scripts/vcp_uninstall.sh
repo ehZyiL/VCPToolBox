@@ -198,13 +198,13 @@ remove_ppas() {
 cleanup_project_files() {
     log_info "清理项目文件..."
     
-    read -p "是否删除生成的数据文件？(dailynote, image, DebugLog 等) (y/n) [默认: n]: " remove_data
+    read -p "是否删除生成的数据文件？(dailynote, image, debug 等) (y/n) [默认: n]: " remove_data
     
     if [[ "$remove_data" == "y" || "$remove_data" == "Y" ]]; then
         log_warning "删除数据文件..."
         rm -rf dailynote/ 2>/dev/null || true
         rm -rf image/ 2>/dev/null || true
-        rm -rf DebugLog/ 2>/dev/null || true
+        rm -rf debug/ 2>/dev/null || true
         rm -rf TVStxt/ 2>/dev/null || true
         log_success "数据文件已删除"
     else

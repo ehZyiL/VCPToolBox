@@ -163,6 +163,29 @@ install_node_deps() {
     log_success "Node.js 依赖安装完成"
 }
 
+# 安装 PM2
+install_pm2() {
+    log_info "安装 PM2 进程管理器..."
+    
+    if command -v pm2 >/dev/null 2>&1; then
+        log_success "PM2 已安装: $(pm2 -v)"
+        return 0
+    fi
+    
+    # 全局安装 PM2
+    if npm install -g pm2; then
+        log_success "PM2 安装完成: $(pm2 -v)"
+        log_info "PM2 功能:"
+        log_info "  - 进程管理和监控"
+        log_info "  - 自动重启"
+        log_info "  - 日志管理"
+        log_info "  - 集群模式"
+        log_info "  - 开机自启"
+    else
+        log_warning "PM2 安装失败，将使用直接启动模式"
+    fi
+}
+
 # 安装 Python 依赖
 install_python_deps() {
     log_info "安装 Python 依赖..."
@@ -186,7 +209,7 @@ install_python_deps() {
 # 创建目录结构
 create_directories() {
     log_info "创建目录结构..."
-    mkdir -p Plugin dailynote image TVStxt Agent DebugLog
+    mkdir -p Plugin dailynote image TVStxt Agent debug/logs
     log_success "目录结构创建完成"
 }
 
@@ -220,9 +243,24 @@ main_menu() {
             install_python3119
             install_nodejs
             install_node_deps
+            install_pm2
             install_python_deps
             create_directories
             log_success "全新安装完成！"
+            
+            # 询问是否设置 PM2 开机自启
+            if command -v pm2 >/dev/null 2>&1; then
+                read -p "是否设置 PM2 开机自启? (y/n): " setup_startup
+                if [[ "$setup_startup" == "y" || "$setup_startup" == "Y" ]]; then
+                    log_info "设置 PM2 开机自启..."
+                    STARTUP_CMD=$(pm2 startup | tail -1)
+                    if [[ "$STARTUP_CMD" == sudo* ]]; then
+                        eval "$STARTUP_CMD"
+                        log_success "开机自启设置完成"
+                    fi
+                fi
+            fi
+            
             read -p "是否立即启动服务器? (y/n): " start
             if [[ "$start" == "y" || "$start" == "Y" ]]; then
                 start_server
@@ -230,6 +268,7 @@ main_menu() {
             ;;
         2)
             install_node_deps
+            install_pm2
             install_python_deps
             log_success "应用依赖安装完成！"
             read -p "是否立即启动服务器? (y/n): " start
@@ -260,11 +299,13 @@ if [ $# -gt 0 ]; then
             install_python3119
             install_nodejs
             install_node_deps
+            install_pm2
             install_python_deps
             create_directories
             ;;
         "deps")
             install_node_deps
+            install_pm2
             install_python_deps
             ;;
         "start")

@@ -8,19 +8,19 @@ const fs = require('fs').promises; // fs.promises for async operations
 const path = require('path');
 const { Writable } = require('stream');
 
-const DEBUG_LOG_DIR = path.join(__dirname, 'DebugLog'); // Moved DEBUG_LOG_DIR definition higher
+const DEBUG_LOG_DIR = path.join(__dirname, 'debug', 'logs'); // Moved DEBUG_LOG_DIR definition higher
 let currentServerLogPath = '';
 let serverLogWriteStream = null;
 
-// 确保 DebugLog 目录存在 (同步版本，因为在启动时需要)
+// 确保 debug/logs 目录存在 (同步版本，因为在启动时需要)
 function ensureDebugLogDirSync() {
     if (!fsSync.existsSync(DEBUG_LOG_DIR)) {
         try {
             fsSync.mkdirSync(DEBUG_LOG_DIR, { recursive: true });
             // Use originalConsoleLog if available, otherwise console.log (it might not be overridden yet)
-            (typeof originalConsoleLog === 'function' ? originalConsoleLog : console.log)(`[ServerSetup] DebugLog 目录已创建: ${DEBUG_LOG_DIR}`);
+            (typeof originalConsoleLog === 'function' ? originalConsoleLog : console.log)(`[ServerSetup] debug/logs 目录已创建: ${DEBUG_LOG_DIR}`);
         } catch (error) {
-            (typeof originalConsoleError === 'function' ? originalConsoleError : console.error)(`[ServerSetup] 创建 DebugLog 目录失败: ${DEBUG_LOG_DIR}`, error);
+            (typeof originalConsoleError === 'function' ? originalConsoleError : console.error)(`[ServerSetup] 创建 debug/logs 目录失败: ${DEBUG_LOG_DIR}`, error);
         }
     }
 }
@@ -135,7 +135,7 @@ async function ensureDebugLogDirAsync() { // Renamed to avoid conflict, used by 
             await fs.mkdir(DEBUG_LOG_DIR, { recursive: true });
         } catch (error) {
             // console.error is now overridden, it will log to file too.
-            console.error(`创建 DebugLog 目录失败 (async): ${DEBUG_LOG_DIR}`, error);
+            console.error(`创建 debug/logs 目录失败 (async): ${DEBUG_LOG_DIR}`, error);
         }
     }
 }
