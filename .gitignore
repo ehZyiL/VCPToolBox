@@ -79,6 +79,9 @@ web_modules/
 .env.production.local
 .env.local
 
+# debug variable files
+debug-*.json
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
@@ -128,6 +131,10 @@ dist
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
 
+# claude
+.claude/
+Claude.md
+
 # yarn v2
 .yarn/cache
 .yarn/unplugged
@@ -141,6 +148,8 @@ config.env.local
 Plugin/EmojiListGenerator/generated_lists/
 Plugin/ImageProcessor/image_cache.json
 Plugin/WeatherReporter/weather_cache.txt
+Plugin/WeatherReporter/weather_cache.json
+Plugin/VCPLog/log/VCPlog.txt
 DebugLog/
 dailynote/
 
@@ -160,3 +169,4 @@ image/通用表情包/*
 # 忽略 FluxGen 生成的图片
 image/fluxgen/
 image/jinaai/
+image/geminiimagegen/
