@@ -16,6 +16,7 @@
   "configSchema": {
     "GeminiImageKey": "string",
     "GeminiImageProxy": "string",
+    "GeminiImageApiBaseUrl": "string",
     "DIST_IMAGE_SERVERS": "string"
   },
   "capabilities": {

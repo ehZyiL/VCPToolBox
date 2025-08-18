@@ -16,7 +16,8 @@ const {
     PROJECT_BASE_PATH,
     SERVER_PORT,
     IMAGESERVER_IMAGE_KEY,
-    VAR_HTTP_URL
+    VAR_HTTP_URL,
+    API_BASE_URL
 } = (() => {
     const keys = (process.env.GeminiImageKey || '').split(',').map(k => k.trim()).filter(Boolean);
     if (keys.length === 0) {
@@ -31,6 +32,9 @@ const {
 
     const distServers = (process.env.DIST_IMAGE_SERVERS || '').split(',').map(s => s.trim()).filter(Boolean);
 
+    const apiBaseUrl = process.env.GeminiImageApiBaseUrl || 'https://proxy.520217.xyz/gemini';
+    console.error(`[GeminiImageGen] 使用API基地址: ${apiBaseUrl}`);
+
     return {
         GEMINI_API_KEYS: keys,
         PROXY_AGENT: agent,
@@ -38,11 +42,11 @@ const {
         PROJECT_BASE_PATH: process.env.PROJECT_BASE_PATH,
         SERVER_PORT: process.env.SERVER_PORT,
         IMAGESERVER_IMAGE_KEY: process.env.IMAGESERVER_IMAGE_KEY,
-        VAR_HTTP_URL: process.env.VarHttpUrl
+        VAR_HTTP_URL: process.env.VarHttpUrl,
+        API_BASE_URL: apiBaseUrl
     };
 })();
 
-const API_BASE_URL = 'https://generativelanguage.googleapis.com';
 const API_ENDPOINT_GENERATE = '/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent';
 
 function getRandomApiKey() {
