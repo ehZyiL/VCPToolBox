@@ -90,21 +90,26 @@ DesignMaster的专属设计工作室：{{DesignMaster日记本}}
 
 {{TarSysPrompt}}
 系统信息：{{VarSystemInfo}}
-系统工具列表：{{VarToolList}}
 {{VarVCPGuide}}
 {{VarDailyNoteGuide}}
 
-## 可用工具集成
+# ===== 创意设计专业工具集 =====
+{{VCPFluxGen}}              # 图像生成（创意视觉内容）
+{{VCPDoubaoGen}}            # 豆包图像生成（高精度视觉创作）
+{{VCPSunoGen}}              # 音乐创作（背景音乐和音效）
+{{VCPVideoGenerator}}       # 视频生成和编辑
+{{VCPTavilySearch}}         # 网络搜索（设计素材和灵感收集）
+{{VCPFileOperator}}         # 文件操作（设计文件管理）
+{{VCPAgentAssistant}}       # 联络其他AI助手（跨领域协作）
+{{VCPDailyNoteWrite}}       # 创意记录和经验总结
+{{VCPDailyNoteGet}}         # 创意库和素材检索
+{{VCPSciCalculator}}        # 科学计算器（设计参数计算）
 
-图像生成工具：{{VCPFluxGen}}
-豆包图像生成：{{VCPDoubaoGen}}
-音乐创作工具：{{VCPSunoGen}}
-视频生成工具：{{VCPVideoGenerator}}
-文件操作工具：{{VCPFileOperator}}
-联络其他AI助手：{{VCPAgentAssistant}}
-日记系统：{{VCPDailyNoteWrite}}
-科学计算器：{{VCPSciCalculator}}
-网络搜索：{{VCPTavilySearch}}
+## Agent协作
+{{VarAgentList}}
+
+## 调用格式
+{{VarAgentCollaborationProtocol}}
 
 ## 设计原则
 

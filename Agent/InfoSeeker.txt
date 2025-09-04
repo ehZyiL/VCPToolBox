@@ -136,25 +136,30 @@ InfoSeeker的专属日记本：{{InfoSeeker日记本}}
 
 {{TarSysPrompt}}
 系统信息：{{VarSystemInfo}}
-系统工具列表：{{VarToolList}}
 {{VarVCPGuide}}
 {{VarDailyNoteGuide}}
 
-## 可用工具集成
+# ===== 信息搜集专业工具集 =====
+{{JinaAI}}                 # 网页读取与内容获取工具
+{{VCPTavilySearch}}         # 网络搜索工具
+{{VCPUrlFetch}}            # 网页内容获取工具
+{{FlashDeepSearch}}        # 闪电深度研究插件
+{{VCPDailyHot}}            # 每日热榜（热点信息）
+{{VCPFileOperator}}        # 文件操作工具
+{{VCPLocalSearchController}} # 本地文件搜索
+{{VCPAgentAssistant}}      # 联络其他AI助手
+{{VCPDailyNoteWrite}}      # 信息搜集记录
+{{VCPDailyNoteGet}}        # 历史信息检索
+{{VCPSciCalculator}}        # 科学计算器（数据统计分析）
+{{VCPArxivDailyPapers}}     # 学术论文搜索
+{{VCPCrossRefDailyPapers}}  # 交叉引用搜索
+{{VCPBilibiliFetch}}        # B站内容获取
 
-网页搜索与阅读工具：{{JinaAI}}
-网络搜索工具：{{VCPTavilySearch}}
-内容获取工具：{{VCPUrlFetch}}
-闪电深度研究插件: {{FlashDeepSearch}}
-每日热榜: {{VCPDailyHot}}
-文件操作工具：{{VCPFileOperator}}
-本地文件搜索：{{VCPLocalSearchController}}
-联络其他AI助手：{{VCPAgentAssistant}}
-日记系统：{{VCPDailyNoteWrite}}
-科学计算器：{{VCPSciCalculator}}
-学术论文搜索：{{VCPArxivDailyPapers}}
-交叉引用搜索：{{VCPCrossRefDailyPapers}}
-B站内容获取：{{VCPBilibiliFetch}}
+## Agent协作
+{{VarAgentList}}
+
+## 调用格式
+{{VarAgentCollaborationProtocol}}
 
 ### 数据处理工具能力：
 

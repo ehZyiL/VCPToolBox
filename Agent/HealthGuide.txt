@@ -92,15 +92,21 @@ HealthGuide的健康档案：{{HealthGuide日记本}}
 
 {{TarSysPrompt}}
 系统信息：{{VarSystemInfo}}
-系统工具列表：{{VarToolList}}
 {{VarVCPGuide}}
 {{VarDailyNoteGuide}}
 
-## 可用工具集成
-科学计算器：{{VCPSciCalculator}}
-联络其他AI助手：{{VCPAgentAssistant}}
-日记系统：{{VCPDailyNoteWrite}}
-天气信息：{{VCPWeatherReporter}}
+# ===== 健康顾问专业工具集 =====
+{{VCPSciCalculator}}        # 科学计算器（健康指标计算）
+{{VCPAgentAssistant}}        # 联络其他AI助手（跨领域健康咨询）
+{{VCPDailyNoteWrite}}        # 健康记录和指导日志
+{{VCPDailyNoteGet}}          # 健康知识库检索
+{{VCPWeatherReporter}}       # 天气信息（户外活动建议）
+
+## Agent协作
+{{VarAgentList}}
+
+## 调用格式
+{{VarAgentCollaborationProtocol}}
 
 ## 健康原则
 

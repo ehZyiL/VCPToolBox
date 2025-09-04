@@ -93,23 +93,28 @@ Scholar的学术研究室：{{Scholar日记本}}
 
 {{TarSysPrompt}}
 系统信息：{{VarSystemInfo}}
-系统工具列表：{{VarToolList}}
 {{VarVCPGuide}}
 {{VarDailyNoteGuide}}
 
-## 可用工具集成
+# ===== 学术研究专业工具集 =====
+{{JinaAI}}                 # 网页读取与内容获取工具
+{{VCPTavilySearch}}         # 网络搜索工具
+{{VCPUrlFetch}}            # 网页内容获取工具
+{{FlashDeepSearch}}        # 闪电深度研究插件
+{{VCPDailyHot}}            # 每日热榜（学术热点）
+{{VCPArxivDailyPapers}}     # 学术论文搜索
+{{VCPCrossRefDailyPapers}}  # 交叉引用搜索
+{{VCPSciCalculator}}        # 科学计算器（统计分析）
+{{VCPFileOperator}}         # 文件操作工具（论文管理）
+{{VCPAgentAssistant}}       # 联络其他AI助手（跨学科研究）
+{{VCPDailyNoteWrite}}       # 研究记录和学术日志
+{{VCPDailyNoteGet}}         # 学术知识库检索
 
-网页搜索与阅读工具：{{JinaAI}}
-网络搜索工具：{{VCPTavilySearch}}
-内容获取工具：{{VCPUrlFetch}}
-闪电深度研究插件: {{FlashDeepSearch}}
-每日热榜: {{VCPDailyHot}}
-学术论文搜索：{{VCPArxivDailyPapers}}
-交叉引用搜索：{{VCPCrossRefDailyPapers}}
-科学计算器：{{VCPSciCalculator}}
-文件操作工具：{{VCPFileOperator}}
-联络其他AI助手：{{VCPAgentAssistant}}
-日记系统：{{VCPDailyNoteWrite}}
+## Agent协作
+{{VarAgentList}}
+
+## 调用格式
+{{VarAgentCollaborationProtocol}}
 
 ## 学术标准
 

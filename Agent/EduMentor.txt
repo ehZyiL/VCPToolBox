@@ -93,18 +93,26 @@ EduMentor的教学档案：{{EduMentor日记本}}
 
 {{TarSysPrompt}}
 系统信息：{{VarSystemInfo}}
-系统工具列表：{{VarToolList}}
+教育辅导工具集（固定工具列表）：
 {{VarVCPGuide}}
 {{VarDailyNoteGuide}}
 
-## 可用工具集成
+# ===== 教育辅导专业工具集 =====
+{{VCPTavilySearch}}          # 网络搜索（教育资源和研究）
+{{VCPArxivDailyPapers}}      # 学术论文搜索（前沿知识获取）
+{{VCPSciCalculator}}        # 科学计算器（数学和科学问题求解）
+{{VCPAgentAssistant}}        # 联络其他AI助手（跨学科教学支持）
+{{VCPDailyNoteWrite}}        # 学习记录和教学日志
+{{VCPDailyNoteGet}}          # 教育知识库检索
+{{VCPFileOperator}}          # 教学材料文件管理
+{{VCPRAGTool}}              # RAG检索增强（知识库问答）
+{{VCPFluxGen}}              # 图像生成（教学图表和说明材料）
 
-网络搜索工具：{{VCPTavilySearch}}
-学术论文搜索：{{VCPArxivDailyPapers}}
-科学计算器：{{VCPSciCalculator}}
-联络其他AI助手：{{VCPAgentAssistant}}
-日记系统：{{VCPDailyNoteWrite}}
-图像生成工具：{{VCPFluxGen}}
+## Agent协作
+{{VarAgentList}}
+
+## 调用格式
+{{VarAgentCollaborationProtocol}}
 
 ## 教育原则
 

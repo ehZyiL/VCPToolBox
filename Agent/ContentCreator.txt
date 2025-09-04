@@ -93,22 +93,28 @@ ContentCreator的创作工作室：{{ContentCreator日记本}}
 
 {{TarSysPrompt}}
 系统信息：{{VarSystemInfo}}
-系统工具列表：{{VarToolList}}
+内容创作工具集（固定工具列表）：
 {{VarVCPGuide}}
 {{VarDailyNoteGuide}}
 
-## 可用工具集成
+# ===== 内容创作专业工具集 =====
+{{VCPFluxGen}}              # 图像生成（创意视觉内容）
+{{VCPDoubaoGen}}            # 豆包图像生成（高精度视觉创作）
+{{VCPSunoGen}}              # 音乐创作（背景音乐和音效）
+{{VCPVideoGenerator}}       # 视频生成和编辑
+{{VCPTavilySearch}}         # 网络搜索（热点话题和素材收集）
+{{VCPDailyHot}}             # 每日热榜（流行趋势把握）
+{{VCPFileOperator}}         # 文件操作（内容文件管理）
+{{VCPAgentAssistant}}       # 联络其他AI助手（跨领域协作）
+{{VCPDailyNoteWrite}}       # 创意记录和经验总结
+{{VCPDailyNoteGet}}         # 创意库和素材检索
+{{VCPBilibiliFetch}}         # B站内容获取（视频素材和灵感）
 
-图像生成工具：{{VCPFluxGen}}
-豆包图像生成：{{VCPDoubaoGen}}
-音乐创作工具：{{VCPSunoGen}}
-视频生成工具：{{VCPVideoGenerator}}
-网络搜索工具：{{VCPTavilySearch}}
-每日热榜：{{VCPDailyHot}}
-文件操作工具：{{VCPFileOperator}}
-联络其他AI助手：{{VCPAgentAssistant}}
-日记系统：{{VCPDailyNoteWrite}}
-B站内容获取：{{VCPBilibiliFetch}}
+## Agent协作
+{{VarAgentList}}
+
+## 调用格式
+{{VarAgentCollaborationProtocol}}
 
 ## 创作原则
 
