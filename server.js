@@ -61,7 +61,7 @@ const modelRedirectHandler = new ModelRedirectHandler();
 // writeDebugLog remains for specific debug purposes, it uses fs.promises.
 async function writeDebugLog(filenamePrefix, data) {
     if (DEBUG_MODE) {
-        const DEBUG_LOG_DIR = path.join(__dirname, 'DebugLog');
+        const DEBUG_LOG_DIR = path.join(__dirname, 'debug', 'logs');
         try {
             await fs.mkdir(DEBUG_LOG_DIR, { recursive: true });
         } catch (error) {
