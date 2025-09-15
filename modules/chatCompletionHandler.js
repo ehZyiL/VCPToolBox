@@ -225,7 +225,7 @@ class ChatCompletionHandler {
                                             }
 
                                             // Filter out reasoning_content from all models (o1, etc.)
-                                            if (reasoningContent !== undefined) {
+                                            if (reasoningContent !== undefined && reasoningContent !== null) {
                                                 if (DEBUG_MODE) {
                                                     console.log(`[Reasoning-Content-Filter] Intercepted reasoning_content chunk from model ${originalBody.model}: ${reasoningContent}`);
                                                 }
@@ -339,7 +339,7 @@ class ChatCompletionHandler {
                                                 }
 
                                                 // Filter out reasoning_content from all models (o1, etc.)
-                                                if (reasoningContent !== undefined) {
+                                                if (reasoningContent !== undefined && reasoningContent !== null) {
                                                     if (DEBUG_MODE) {
                                                         console.log(`[Reasoning-Content-Filter] Intercepted reasoning_content chunk in finalize from model ${originalBody.model}: ${reasoningContent}`);
                                                     }
