@@ -439,8 +439,9 @@ class ChatCompletionHandler {
                                 }]
                             };
                             res.write(`data: ${JSON.stringify(finalChunkPayload)}\n\n`);
-                            res.write('data: [DONE]\n\n');
-                            res.end();
+                            res.write('data: [DONE]\n\n', () => {
+                                res.end();
+                            });
                         }
                         break;
                     }
@@ -498,8 +499,9 @@ class ChatCompletionHandler {
                                 choices: [{ index: 0, delta: {}, finish_reason: 'stop' }]
                             };
                             res.write(`data: ${JSON.stringify(finalChunkPayload)}\n\n`);
-                            res.write('data: [DONE]\n\n');
-                            res.end();
+                            res.write('data: [DONE]\n\n', () => {
+                                res.end();
+                            });
                         }
                         break; // Exit the VCP loop
                     }
@@ -640,8 +642,9 @@ class ChatCompletionHandler {
                         }]
                     };
                     res.write(`data: ${JSON.stringify(finalChunkPayload)}\n\n`);
-                    res.write('data: [DONE]\n\n');
-                    res.end();
+                    res.write('data: [DONE]\n\n', () => {
+                        res.end();
+                    });
                 }
 
             } else { // Non-streaming (originalBody.stream === false)
@@ -944,8 +947,9 @@ class ChatCompletionHandler {
                         }]
                     });
                 } else if (!res.writableEnded) {
-                    res.write('data: [DONE]\n\n');
-                    res.end();
+                    res.write('data: [DONE]\n\n', () => {
+                        res.end();
+                    });
                 }
                 return;
             }
