@@ -335,13 +335,23 @@ class PluginManager {
                                     const scriptPath = path.join(pluginPath, manifest.entryPoint.script);
                                     const module = require(scriptPath);
                                     const initialConfig = this._getPluginConfig(manifest);
+                                    
+                                    // Manually inject essential server configs for service modules
+                                    initialConfig.PORT = process.env.PORT;
+                                    initialConfig.Key = process.env.Key;
+                                    initialConfig.PROJECT_BASE_PATH = this.projectBasePath;
+
                                     if (typeof module.initialize === 'function') {
-                                        await module.initialize(initialConfig);
+                                        const dependencies = {
+                                            vcpLogFunctions: this.getVCPLogFunctions()
+                                        };
+                                        await module.initialize(initialConfig, dependencies);
                                     }
                                     if (isPreprocessor && typeof module.processMessages === 'function') {
                                         discoveredPreprocessors.set(manifest.name, module);
                                     }
-                                    if (isService && typeof module.registerRoutes === 'function') {
+                                    // For both service and hybridservice, store the module for direct calls or routing.
+                                    if (isService) {
                                         this.serviceModules.set(manifest.name, { manifest, module });
                                     }
                                 } catch (e) {
@@ -529,10 +539,19 @@ class PluginManager {
                delete pluginSpecificArgs.command;
                resultFromPlugin = await this.webSocketServer.forwardCommandToChrome(command, pluginSpecificArgs);
 
+            } else if (plugin.pluginType === 'hybridservice' && plugin.communication?.protocol === 'direct') {
+               // --- 混合服务插件直接调用逻辑 ---
+               if (this.debugMode) console.log(`[PluginManager] Processing direct tool call for hybrid service: ${toolName}`);
+               const serviceModule = this.getServiceModule(toolName);
+               if (serviceModule && typeof serviceModule.processToolCall === 'function') {
+                   resultFromPlugin = await serviceModule.processToolCall(pluginSpecificArgs);
+               } else {
+                   throw new Error(`[PluginManager] Hybrid service plugin "${toolName}" does not have a processToolCall function.`);
+               }
             } else {
                 // --- 本地插件调用逻辑 (现有逻辑) ---
                 if (!((plugin.pluginType === 'synchronous' || plugin.pluginType === 'asynchronous') && plugin.communication?.protocol === 'stdio')) {
-                    throw new Error(`[PluginManager] Local plugin "${toolName}" is not a supported stdio plugin for direct tool call.`);
+                    throw new Error(`[PluginManager] Local plugin "${toolName}" (type: ${plugin.pluginType}) is not a supported stdio plugin for direct tool call.`);
                 }
                 
                 let executionParam = null;

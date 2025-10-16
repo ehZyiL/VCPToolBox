@@ -3,6 +3,7 @@ const path = require('path');
 
 // --- Configuration ---
 const DEBUG_MODE = (process.env.DebugMode || "false").toLowerCase() === "true";
+const CONFIGURED_EXTENSION = (process.env.DAILY_NOTE_EXTENSION || "txt").toLowerCase() === "md" ? "md" : "txt"; // Allow only txt or md, default to txt
 const projectBasePath = process.env.PROJECT_BASE_PATH;
 const dailyNoteRootPath = projectBasePath ? path.join(projectBasePath, 'dailynote') : path.join(__dirname, '..', '..', 'dailynote'); // Fallback
 
@@ -83,7 +84,7 @@ async function writeDiary(maidName, dateString, contentText) {
 
     const dirPath = path.join(dailyNoteRootPath, sanitizedFolderName);
     const baseFileNameWithoutExt = `${datePart}-${timeStringForFile}`;
-    const fileExtension = '.txt';
+    const fileExtension = `.${CONFIGURED_EXTENSION}`;
     const finalFileName = `${baseFileNameWithoutExt}${fileExtension}`;
     const filePath = path.join(dirPath, finalFileName);
 
