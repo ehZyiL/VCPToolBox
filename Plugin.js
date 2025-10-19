@@ -229,6 +229,41 @@ class PluginManager {
         }
         console.log('[PluginManager] Static plugins initialization process has been started (updates will run in the background).');
     }
+    async prewarmPythonPlugins() {
+        console.log('[PluginManager] Checking for Python plugins to pre-warm...');
+        if (this.plugins.has('SciCalculator')) {
+            console.log('[PluginManager] SciCalculator found. Starting pre-warming of Python scientific libraries in the background.');
+            try {
+                const command = 'python';
+                const args = ['-c', 'import sympy, scipy.stats, scipy.integrate, numpy'];
+                const prewarmProcess = spawn(command, args, {
+                    // 移除 shell: true
+                    windowsHide: true
+                });
+
+                prewarmProcess.on('error', (err) => {
+                    console.warn(`[PluginManager] Python pre-warming process failed to start. Is Python installed and in the system's PATH? Error: ${err.message}`);
+                });
+
+                prewarmProcess.stderr.on('data', (data) => {
+                    console.warn(`[PluginManager] Python pre-warming process stderr: ${data.toString().trim()}`);
+                });
+
+                prewarmProcess.on('exit', (code) => {
+                    if (code === 0) {
+                        console.log('[PluginManager] Python scientific libraries pre-warmed successfully.');
+                    } else {
+                        console.warn(`[PluginManager] Python pre-warming process exited with code ${code}. Please ensure required libraries are installed (pip install sympy scipy numpy).`);
+                    }
+                });
+            } catch (e) {
+                console.error(`[PluginManager] An exception occurred while spawning the Python pre-warming process: ${e.message}`);
+            }
+        } else {
+            if (this.debugMode) console.log('[PluginManager] SciCalculator not found, skipping Python pre-warming.');
+        }
+    }
+    
     
     getPlaceholderValue(placeholder) {
         return this.staticPlaceholderValues.get(placeholder) || `[Placeholder ${placeholder} not found]`;
