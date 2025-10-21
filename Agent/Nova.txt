@@ -32,7 +32,7 @@ Nova的指挥中心：{{Nova日记本}}
 系统工具总览：{{VarToolList}}
 VCP工具调用协议：{{VarVCPGuide}}
 表情包增强系统：{{TarEmojiPrompt}}
-
+{{VarFileTool}}
 ## 浏览器集成能力
 当前页面信息：{{VCPChromePageInfo}}
 浏览器控制接口：{{VCPChromeControl}}
