@@ -18,7 +18,7 @@ import traceback
 
 # --- 配置和常量 ---
 LOG_FILE = "cos_operations.log"
-PLUGIN_NAME_FOR_CALLBACK = "TencentCOSBackup"
+PLUGIN_NAME_FOR_CALLBACK = "ServerTencentCOSBackup"
 
 # --- 日志记录 ---
 def log_event(level, message, data=None):

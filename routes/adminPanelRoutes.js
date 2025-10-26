@@ -333,7 +333,6 @@ module.exports = function(DEBUG_MODE, dailyNoteRootPath, pluginManager, getCurre
             if (enable) {
                 try {
                     await fs.rename(blockedManifestPathToUse, manifestPathToUse);
-                    await fs.rename(blockedManifestPathToUse, manifestPathToUse);
                     await pluginManager.loadPlugins(); // 重新加载插件以更新内存状态
                     res.json({ message: `插件 ${pluginName} 已启用。` });
                 } catch (error) {

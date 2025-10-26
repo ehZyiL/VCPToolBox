@@ -1,8 +1,8 @@
-# 腾讯云COS备份插件
+# Server腾讯云COS备份插件
 
 ## 概述
 
-TencentCOSBackup是一个功能完整的腾讯云对象存储（COS）插件，为VCP系统提供强大的云存储功能。该插件支持文件上传、下载、复制、移动、删除和列出操作，具有精细的权限控制、自动压缩功能和病毒检测功能。
+ServerTencentCOSBackup是一个功能完整的腾讯云对象存储（COS）插件，为VCP系统提供强大的云存储功能。该插件支持文件上传、下载、复制、移动、删除和列出操作，具有精细的权限控制、自动压缩功能和病毒检测功能。
 
 **重要限制**：目前只支持部署VCPToolBox的机器的本地文件的备份操作,如需对VCPChat支持请到VCPChat\VCPDistributedServer\Plugin\ChatTencentcos进行配置
 **病毒检测功能**：无需额外授权和权限检查，支持对COS中的文件和公网文件进行病毒检测。
@@ -46,7 +46,8 @@ cp config.env.example config.env
 - `AGENT_PARENT_DIR`：AgentAI操作文件夹的父目录名称（默认：VCPAgentAI）
 - `AGENT_FOLDERS_CONFIG`：文件夹权限配置
 - `COMPRESS_THRESHOLD_MB`：文件压缩阈值（默认：100MB）
-- `DEBUG_MODE`：调试模式开关（默认：true）
+- `DEBUG_MODE`：调试模式开关（默认：false）
+- `ENABLE_LOGGING`：日志记录功能开关（默认：false）
 
 ### 3. 文件夹权限配置
 

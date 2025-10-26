@@ -2311,13 +2311,6 @@ Description Length: ${newDescription.length}`);
         }
         if (serverLogFilterInput) serverLogFilterInput.value = ''; // Clear filter on init
 
-        await loadServerLog(); // Perform the initial load
-
-        // Start polling after the initial load
-        if (!serverLogIntervalId) {
-            serverLogIntervalId = setInterval(loadServerLog, 2000); // Poll every 2 seconds
-            console.log('Started server log auto-refresh interval.');
-        }
     }
 
     function filterAndHighlightLog() {
