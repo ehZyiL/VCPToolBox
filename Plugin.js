@@ -1197,4 +1197,14 @@ class PluginManager {
 }
 
 const pluginManager = new PluginManager();
+
+// 新增：获取所有静态占位符值
+pluginManager.getAllPlaceholderValues = function() {
+    const valuesMap = new Map();
+    for (const [key, entry] of this.staticPlaceholderValues.entries()) {
+        valuesMap.set(key, entry.value || `[Placeholder ${key} not found]`);
+    }
+    return valuesMap;
+};
+
 module.exports = pluginManager;
