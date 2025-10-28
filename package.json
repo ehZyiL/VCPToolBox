@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"No tests defined\" && exit 0",
+    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js",
     "debug": "node --inspect=9229 server.js",
     "pm2:start": "pm2 start ecosystem.config.js --only cherry-var",
     "pm2:debug": "pm2 start ecosystem.config.js --only cherry-var-debug",
     "pm2:stop": "pm2 stop cherry-var",
+    "pm2:debug-stop": "pm2 stop cherry-var-debug",
     "pm2:restart": "pm2 restart cherry-var",
     "pm2:delete": "pm2 delete cherry-var",
     "pm2:logs": "pm2 logs cherry-var",
@@ -22,6 +23,7 @@
   "dependencies": {
     "@dqbd/tiktoken": "^1.0.22",
     "@mozilla/readability": "^0.6.0",
+    "@node-rs/jieba": "^2.0.1",
     "@tavily/core": "^0.5.2",
     "axios": "^1.6.0",
     "basic-auth": "^2.0.1",
