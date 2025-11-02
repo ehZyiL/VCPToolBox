@@ -12,6 +12,8 @@
     let toolDescriptions = {}; // 自定义工具描述（工具名 -> 描述文本）
     let currentConfigFile = null; // 当前配置文件名
     let availableConfigs = []; // 可用的配置文件列表
+    let toolItemsCache = new Map(); // DOM缓存：uniqueId -> DOM元素
+    let visiblePlugins = new Set(); // 可见的插件名称
 
     // DOM元素
     const elements = {
@@ -46,6 +48,7 @@
         try {
             await loadAvailableTools();
             await loadAvailableConfigs();
+            renderPluginFilterList();
             attachEventListeners();
             updateToolCount();
             updatePreview();
@@ -64,6 +67,31 @@
             if (!response.ok) throw new Error('获取工具列表失败');
             const data = await response.json();
             allTools = data.tools || [];
+            
+            // 标记无效工具，但不过滤掉（方便用户检查）
+            allTools.forEach((tool, index) => {
+                if (!tool || !tool.pluginName || !tool.name) {
+                    console.warn('发现无效工具数据:', tool);
+                    tool.isInvalid = true;
+                    // 为无效工具设置默认值
+                    tool.pluginName = tool.pluginName || '未知插件';
+                    tool.name = tool.name || `无效工具_${index}`;
+                    tool.description = '⚠️ 此工具数据不完整，请检查插件配置';
+                } else {
+                    tool.isInvalid = false;
+                }
+            });
+            
+            // 为每个工具生成唯一ID，使用更稳定的方式
+            // 使用计数器处理同插件同名的情况
+            const nameCounters = new Map();
+            allTools.forEach(tool => {
+                const baseId = `${tool.pluginName}__${tool.name}`;
+                const count = nameCounters.get(baseId) || 0;
+                tool.uniqueId = count === 0 ? baseId : `${baseId}__${count}`;
+                nameCounters.set(baseId, count + 1);
+            });
+            
             renderToolsList();
         } catch (error) {
             console.error('加载工具列表失败:', error);
@@ -100,25 +128,107 @@
     // 渲染工具列表
     function renderToolsList() {
         elements.toolsList.innerHTML = '';
+        toolItemsCache.clear(); // 清空DOM缓存
         
         if (allTools.length === 0) {
             elements.toolsList.innerHTML = '<p style="padding: 20px; text-align: center; color: var(--text-color-secondary);">暂无可用工具</p>';
             return;
         }
 
+        // 按插件分组工具，同时区分有效和无效工具
+        const validToolsByPlugin = {};
+        const invalidToolsByPlugin = {};
+        
         allTools.forEach(tool => {
-            const toolItem = createToolItemElement(tool);
-            elements.toolsList.appendChild(toolItem);
+            const pluginName = tool.pluginName;
+            const targetMap = tool.isInvalid ? invalidToolsByPlugin : validToolsByPlugin;
+            
+            if (!targetMap[pluginName]) {
+                targetMap[pluginName] = [];
+            }
+            targetMap[pluginName].push(tool);
         });
+
+        // 先显示有效插件（按插件名排序）
+        const sortedValidPluginNames = Object.keys(validToolsByPlugin).sort((a, b) => a.localeCompare(b));
+        sortedValidPluginNames.forEach(pluginName => {
+            const pluginTools = validToolsByPlugin[pluginName];
+            const pluginGroup = createPluginGroupElement(pluginName, pluginTools, false);
+            elements.toolsList.appendChild(pluginGroup);
+        });
+        
+        // 再显示无效插件（放在最后，方便用户检查）
+        const sortedInvalidPluginNames = Object.keys(invalidToolsByPlugin).sort((a, b) => a.localeCompare(b));
+        if (sortedInvalidPluginNames.length > 0) {
+            // 添加分隔符
+            const separator = document.createElement('div');
+            separator.className = 'invalid-tools-separator';
+            separator.innerHTML = '<span>⚠️ 以下工具数据不完整，请检查插件配置 ⚠️</span>';
+            elements.toolsList.appendChild(separator);
+            
+            sortedInvalidPluginNames.forEach(pluginName => {
+                const pluginTools = invalidToolsByPlugin[pluginName];
+                const pluginGroup = createPluginGroupElement(pluginName, pluginTools, true);
+                elements.toolsList.appendChild(pluginGroup);
+            });
+        }
+    }
+
+    // 创建插件分组元素
+    function createPluginGroupElement(pluginName, tools, isInvalid = false) {
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'plugin-group' + (isInvalid ? ' invalid-plugin-group' : '');
+        groupDiv.dataset.pluginName = pluginName;
+
+        // 创建分组头部
+        const header = document.createElement('div');
+        header.className = 'plugin-group-header' + (isInvalid ? ' invalid-plugin-header' : '');
+        
+        // 插件名称 (使用第一个工具的displayName作为插件显示名)
+        const pluginDisplayName = tools.length > 0 ? tools[0].displayName : pluginName;
+        const icon = isInvalid ? '⚠️' : '📦';
+        
+        // 检查这个插件下所有工具是否都已选中
+        const allSelected = tools.every(tool => selectedTools.has(tool.uniqueId));
+        const someSelected = tools.some(tool => selectedTools.has(tool.uniqueId));
+        
+        header.innerHTML = `
+            <span class="plugin-group-icon">${icon}</span>
+            <span class="plugin-group-name">${pluginDisplayName}</span>
+            <span class="plugin-group-original-name">(${pluginName})</span>
+            <span class="plugin-group-count">${tools.length} 个工具</span>
+            <button class="btn-select-all-plugin" data-plugin="${pluginName}" title="${allSelected ? '取消全选' : '全选此插件'}">
+                ${allSelected ? '✓ 已全选' : (someSelected ? '◐ 部分选中' : '☐ 全选')}
+            </button>
+        `;
+        
+        // 创建工具列表容器
+        const toolsContainer = document.createElement('div');
+        toolsContainer.className = 'plugin-tools-container';
+        
+        // 为每个工具创建项目
+        tools.forEach(tool => {
+            const toolItem = createToolItemElement(tool);
+            toolsContainer.appendChild(toolItem);
+        });
+        
+        groupDiv.appendChild(header);
+        groupDiv.appendChild(toolsContainer);
+        
+        return groupDiv;
     }
 
     // 创建工具项元素
     function createToolItemElement(tool) {
-        const isSelected = selectedTools.has(tool.name);
+        const isSelected = selectedTools.has(tool.uniqueId);
         
         const div = document.createElement('div');
         div.className = 'tool-item' + (isSelected ? ' selected' : '');
-        div.dataset.toolName = tool.name;
+        div.dataset.toolId = tool.uniqueId;
+        div.dataset.toolName = tool.name; // 保留原始name作为备用
+        
+        // 缓存DOM元素
+        toolItemsCache.set(tool.uniqueId, div);
         
         // 头部（复选框 + 工具名称）
         const header = document.createElement('div');
@@ -128,7 +238,7 @@
         checkbox.type = 'checkbox';
         checkbox.className = 'tool-checkbox';
         checkbox.checked = isSelected;
-        checkbox.addEventListener('change', () => toggleToolSelection(tool.name));
+        checkbox.dataset.toolId = tool.uniqueId; // 存储uniqueId用于事件委托
         
         const info = document.createElement('div');
         info.className = 'tool-info';
@@ -157,12 +267,14 @@
         actions.className = 'tool-actions';
         
         const editBtn = document.createElement('button');
+        editBtn.className = 'edit-tool-btn';
         editBtn.textContent = '编辑说明';
-        editBtn.addEventListener('click', () => editToolDescription(tool));
+        editBtn.dataset.toolId = tool.uniqueId; // 存储uniqueId用于事件委托
         
         const viewBtn = document.createElement('button');
+        viewBtn.className = 'view-tool-btn';
         viewBtn.textContent = '查看完整说明';
-        viewBtn.addEventListener('click', () => viewFullDescription(tool));
+        viewBtn.dataset.toolId = tool.uniqueId; // 存储uniqueId用于事件委托
         
         actions.appendChild(editBtn);
         actions.appendChild(viewBtn);
@@ -175,21 +287,115 @@
     }
 
     // 切换工具选择
-    function toggleToolSelection(toolName) {
-        if (selectedTools.has(toolName)) {
-            selectedTools.delete(toolName);
-        } else {
-            selectedTools.add(toolName);
+    function toggleToolSelection(uniqueId) {
+        if (!uniqueId) {
+            console.warn('toggleToolSelection: uniqueId 不能为空');
+            return;
         }
         
-        // 更新该工具项的显示
-        const toolItem = elements.toolsList.querySelector(`[data-tool-name="${toolName}"]`);
+        // 找到对应的工具对象，获取其插件名
+        const tool = allTools.find(t => t.uniqueId === uniqueId);
+        const pluginName = tool ? tool.pluginName : null;
+        
+        if (selectedTools.has(uniqueId)) {
+            selectedTools.delete(uniqueId);
+        } else {
+            selectedTools.add(uniqueId);
+        }
+        
+        // 使用缓存的DOM元素
+        const toolItem = toolItemsCache.get(uniqueId);
         if (toolItem) {
             const checkbox = toolItem.querySelector('.tool-checkbox');
-            checkbox.checked = selectedTools.has(toolName);
-            toolItem.classList.toggle('selected', selectedTools.has(toolName));
+            if (checkbox) {
+                checkbox.checked = selectedTools.has(uniqueId);
+            }
+            toolItem.classList.toggle('selected', selectedTools.has(uniqueId));
         }
         
+        // 更新该插件的全选按钮状态
+        if (pluginName) {
+            updatePluginSelectButton(pluginName);
+        }
+        
+        // 更新插件过滤列表中的选中数量
+        updatePluginFilterCounts();
+        
+        updateToolCount();
+        updatePreview();
+        enableSaveButtons();
+    }
+    
+    // 更新插件全选按钮的状态
+    function updatePluginSelectButton(pluginName) {
+        if (!pluginName) return;
+        
+        // 找到该插件的分组元素
+        const pluginGroup = elements.toolsList.querySelector(`.plugin-group[data-plugin-name="${pluginName}"]`);
+        if (!pluginGroup) return;
+        
+        // 找到该插件下的所有工具
+        const pluginTools = allTools.filter(tool => tool.pluginName === pluginName);
+        if (pluginTools.length === 0) return;
+        
+        // 检查选择状态
+        const allSelected = pluginTools.every(tool => selectedTools.has(tool.uniqueId));
+        const someSelected = pluginTools.some(tool => selectedTools.has(tool.uniqueId));
+        
+        // 更新按钮文本和title
+        const button = pluginGroup.querySelector('.btn-select-all-plugin');
+        if (button) {
+            if (allSelected) {
+                button.textContent = '✓ 已全选';
+                button.title = '取消全选';
+            } else if (someSelected) {
+                button.textContent = '◐ 部分选中';
+                button.title = '全选此插件';
+            } else {
+                button.textContent = '☐ 全选';
+                button.title = '全选此插件';
+            }
+        }
+    }
+    
+    // 切换插件下所有工具的选择状态
+    function togglePluginSelection(pluginName) {
+        if (!pluginName) {
+            console.warn('togglePluginSelection: pluginName 不能为空');
+            return;
+        }
+        
+        // 找到该插件下的所有工具
+        const pluginTools = allTools.filter(tool => tool.pluginName === pluginName);
+        if (pluginTools.length === 0) {
+            return;
+        }
+        
+        // 检查是否全部已选中
+        const allSelected = pluginTools.every(tool => selectedTools.has(tool.uniqueId));
+        
+        // 如果全部已选中，则取消全选；否则全选
+        pluginTools.forEach(tool => {
+            if (allSelected) {
+                selectedTools.delete(tool.uniqueId);
+            } else {
+                selectedTools.add(tool.uniqueId);
+            }
+            
+            // 更新DOM
+            const toolItem = toolItemsCache.get(tool.uniqueId);
+            if (toolItem) {
+                const checkbox = toolItem.querySelector('.tool-checkbox');
+                if (checkbox) {
+                    checkbox.checked = selectedTools.has(tool.uniqueId);
+                }
+                toolItem.classList.toggle('selected', selectedTools.has(tool.uniqueId));
+            }
+        });
+        
+        // 重新渲染以更新按钮状态
+        renderToolsList();
+        updatePluginFilterCounts(); // 更新插件过滤列表的选中数量
         updateToolCount();
         updatePreview();
         enableSaveButtons();
@@ -197,8 +403,16 @@
 
     // 编辑工具说明 - 修改为展开小窗形式
     function editToolDescription(tool) {
-        const toolItem = elements.toolsList.querySelector(`[data-tool-name="${tool.name}"]`);
-        if (!toolItem) return;
+        if (!tool || !tool.uniqueId) {
+            console.warn('editToolDescription: 无效的工具对象');
+            return;
+        }
+        
+        const toolItem = toolItemsCache.get(tool.uniqueId);
+        if (!toolItem) {
+            console.warn('editToolDescription: 未找到工具项DOM元素');
+            return;
+        }
         
         // 检查是否已经有编辑器展开
         let editor = toolItem.querySelector('.inline-editor-panel');
@@ -228,25 +442,12 @@
         const saveBtn = document.createElement('button');
         saveBtn.className = 'btn-save-inline';
         saveBtn.textContent = '💾 保存';
-        saveBtn.addEventListener('click', () => {
-            toolDescriptions[tool.name] = textarea.value;
-            
-            // 更新工具项显示
-            const descDiv = toolItem.querySelector('.tool-description');
-            const newDesc = textarea.value;
-            descDiv.textContent = newDesc.substring(0, 200) + (newDesc.length > 200 ? '...' : '');
-            
-            editor.remove();
-            updatePreview();
-            enableSaveButtons();
-        });
+        // 事件通过事件委托处理，不需要在这里添加监听器
         
         const cancelBtn = document.createElement('button');
         cancelBtn.className = 'btn-cancel-inline';
         cancelBtn.textContent = '✖ 取消';
-        cancelBtn.addEventListener('click', () => {
-            editor.remove();
-        });
+        // 事件通过事件委托处理，不需要在这里添加监听器
         
         actionsDiv.appendChild(saveBtn);
         actionsDiv.appendChild(cancelBtn);
@@ -267,8 +468,16 @@
 
     // 查看完整说明 - 修改为展开小窗形式
     function viewFullDescription(tool) {
-        const toolItem = elements.toolsList.querySelector(`[data-tool-name="${tool.name}"]`);
-        if (!toolItem) return;
+        if (!tool || !tool.uniqueId) {
+            console.warn('viewFullDescription: 无效的工具对象');
+            return;
+        }
+        
+        const toolItem = toolItemsCache.get(tool.uniqueId);
+        if (!toolItem) {
+            console.warn('viewFullDescription: 未找到工具项DOM元素');
+            return;
+        }
         
         // 检查是否已经有查看器展开
         let viewer = toolItem.querySelector('.inline-viewer-panel');
@@ -295,9 +504,7 @@
         const closeBtn = document.createElement('button');
         closeBtn.className = 'btn-close-inline';
         closeBtn.textContent = '✖ 关闭';
-        closeBtn.addEventListener('click', () => {
-            viewer.remove();
-        });
+        // 事件通过事件委托处理，不需要在这里添加监听器
         
         viewer.appendChild(title);
         viewer.appendChild(content);
@@ -344,18 +551,76 @@
             output += '========================================\n\n';
         }
         
-        // 为每个选中的工具生成说明
-        const selectedToolsList = allTools.filter(tool => selectedTools.has(tool.name));
-        selectedToolsList.forEach((tool, index) => {
-            const desc = toolDescriptions[tool.name] || tool.description || '暂无描述';
+        // 获取所有选中的工具
+        const selectedToolsList = allTools.filter(tool => selectedTools.has(tool.uniqueId));
+        
+        // 按插件分组工具，以节省Tokens
+        const toolsByPlugin = {};
+        selectedToolsList.forEach(tool => {
+            if (!toolsByPlugin[tool.pluginName]) {
+                toolsByPlugin[tool.pluginName] = [];
+            }
+            toolsByPlugin[tool.pluginName].push(tool);
+        });
+        
+        // 按插件名排序
+        const sortedPluginNames = Object.keys(toolsByPlugin).sort((a, b) => a.localeCompare(b));
+        
+        // 为每个插件生成说明
+        let pluginIndex = 0;
+        sortedPluginNames.forEach(pluginName => {
+            pluginIndex++;
+            const pluginTools = toolsByPlugin[pluginName];
             
-            output += `${index + 1}. ${tool.displayName || tool.name} (${tool.name})\n`;
-            output += `插件: ${tool.pluginName}\n`;
-            output += `说明: ${desc}\n`;
+            // 获取插件显示名称（使用第一个工具的displayName）
+            const pluginDisplayName = pluginTools[0].displayName || pluginName;
             
-            // 如果有示例且用户选择包含示例
-            if (includeExamples && tool.example) {
-                output += `\n示例:\n${tool.example}\n`;
+            // 如果该插件只有一个工具
+            if (pluginTools.length === 1) {
+                const tool = pluginTools[0];
+                const desc = toolDescriptions[tool.name] || tool.description || '暂无描述';
+                
+                output += `${pluginIndex}. ${pluginDisplayName} (${tool.name})\n`;
+                output += `插件: ${pluginName}\n`;
+                output += `说明: ${desc}\n`;
+                
+                if (includeExamples && tool.example) {
+                    output += `\n示例:\n${tool.example}\n`;
+                }
+            } else {
+                // 如果该插件有多个工具，合并显示
+                output += `${pluginIndex}. ${pluginDisplayName}\n`;
+                output += `插件: ${pluginName}\n`;
+                output += `该插件包含 ${pluginTools.length} 个工具调用:\n\n`;
+                
+                pluginTools.forEach((tool, toolIdx) => {
+                    const desc = toolDescriptions[tool.name] || tool.description || '暂无描述';
+                    
+                    output += `  ${pluginIndex}.${toolIdx + 1} ${tool.name}\n`;
+                    
+                    // 处理说明部分，保持原有的多行格式
+                    const descLines = desc.split('\n');
+                    descLines.forEach((line, lineIdx) => {
+                        if (lineIdx === 0) {
+                            output += `  说明: ${line}\n`;
+                        } else {
+                            output += `  ${line}\n`;
+                        }
+                    });
+                    
+                    if (includeExamples && tool.example) {
+                        output += `\n`;
+                        // 将示例内容缩进
+                        const exampleLines = tool.example.split('\n');
+                        exampleLines.forEach(line => {
+                            output += `  ${line}\n`;
+                        });
+                    }
+                    
+                    if (toolIdx < pluginTools.length - 1) {
+                        output += '\n';
+                    }
+                });
             }
             
             output += '\n' + '----------------------------------------' + '\n\n';
@@ -402,6 +667,97 @@
         elements.includeHeader.addEventListener('change', updatePreview);
         elements.includeExamples.addEventListener('change', updatePreview);
         elements.copyPreviewBtn.addEventListener('click', copyPreview);
+        
+        // 使用事件委托处理工具列表中的事件
+        elements.toolsList.addEventListener('click', handleToolsListClick);
+        elements.toolsList.addEventListener('change', handleToolsListChange);
+    }
+    
+    // 处理工具列表的点击事件（事件委托）
+    function handleToolsListClick(e) {
+        const target = e.target;
+        
+        // 处理插件全选/取消全选按钮
+        if (target.classList.contains('btn-select-all-plugin')) {
+            const pluginName = target.dataset.plugin;
+            if (pluginName) {
+                togglePluginSelection(pluginName);
+            }
+            e.stopPropagation(); // 防止触发头部的其他事件
+            return;
+        }
+        
+        // 处理编辑按钮
+        if (target.classList.contains('edit-tool-btn')) {
+            const uniqueId = target.dataset.toolId;
+            if (uniqueId) {
+                const tool = allTools.find(t => t.uniqueId === uniqueId);
+                if (tool) {
+                    editToolDescription(tool);
+                }
+            }
+            return;
+        }
+        
+        // 处理查看按钮
+        if (target.classList.contains('view-tool-btn')) {
+            const uniqueId = target.dataset.toolId;
+            if (uniqueId) {
+                const tool = allTools.find(t => t.uniqueId === uniqueId);
+                if (tool) {
+                    viewFullDescription(tool);
+                }
+            }
+            return;
+        }
+        
+        // 处理内联编辑器的保存按钮
+        if (target.classList.contains('btn-save-inline')) {
+            const panel = target.closest('.inline-editor-panel');
+            if (panel) {
+                const toolItem = panel.closest('.tool-item');
+                if (toolItem) {
+                    const uniqueId = toolItem.dataset.toolId;
+                    const tool = allTools.find(t => t.uniqueId === uniqueId);
+                    if (tool) {
+                        const textarea = panel.querySelector('.inline-editor-textarea');
+                        toolDescriptions[tool.name] = textarea.value;
+                        
+                        // 更新工具项显示
+                        const descDiv = toolItem.querySelector('.tool-description');
+                        const newDesc = textarea.value;
+                        descDiv.textContent = newDesc.substring(0, 200) + (newDesc.length > 200 ? '...' : '');
+                        
+                        panel.remove();
+                        updatePreview();
+                        enableSaveButtons();
+                    }
+                }
+            }
+            return;
+        }
+        
+        // 处理取消按钮
+        if (target.classList.contains('btn-cancel-inline') || target.classList.contains('btn-close-inline')) {
+            const panel = target.closest('.inline-editor-panel, .inline-viewer-panel');
+            if (panel) {
+                panel.remove();
+            }
+            return;
+        }
+    }
+    
+    // 处理工具列表的change事件（事件委托）
+    function handleToolsListChange(e) {
+        const target = e.target;
+        
+        // 处理复选框变化
+        if (target.classList.contains('tool-checkbox')) {
+            const uniqueId = target.dataset.toolId;
+            if (uniqueId) {
+                toggleToolSelection(uniqueId);
+            }
+        }
     }
 
     // 加载配置
@@ -419,11 +775,21 @@
             const data = await response.json();
             
             currentConfigFile = configName;
-            selectedTools = new Set(data.selectedTools || []);
+            
+            // 将保存的tool names转换为uniqueIds
+            const savedToolNames = new Set(data.selectedTools || []);
+            selectedTools = new Set();
+            allTools.forEach(tool => {
+                if (savedToolNames.has(tool.name)) {
+                    selectedTools.add(tool.uniqueId);
+                }
+            });
+            
             toolDescriptions = data.toolDescriptions || {};
             
             // 重新渲染工具列表以反映选择状态
             renderToolsList();
+            updatePluginFilterCounts(); // 更新插件过滤列表的选中数量
             updateToolCount();
             updatePreview();
             enableSaveButtons();
@@ -682,8 +1048,17 @@
 
         showLoading(true);
         try {
+            // 将uniqueIds转换回tool names进行保存
+            const selectedToolNames = [];
+            selectedTools.forEach(uniqueId => {
+                const tool = allTools.find(t => t.uniqueId === uniqueId);
+                if (tool) {
+                    selectedToolNames.push(tool.name);
+                }
+            });
+            
             const configData = {
-                selectedTools: Array.from(selectedTools),
+                selectedTools: selectedToolNames,
                 toolDescriptions: toolDescriptions
             };
 
@@ -769,7 +1144,39 @@
                 return;
             }
             
-            // 执行导出
+            // 检查文件是否存在
+            try {
+                const checkResponse = await fetch(`${API_BASE}/tool-list-editor/check-file/${encodeURIComponent(fileName)}`);
+                if (!checkResponse.ok) {
+                    throw new Error('检查文件失败');
+                }
+                const checkResult = await checkResponse.json();
+                
+                if (checkResult.exists) {
+                    // 文件已存在，显示覆盖确认
+                    errorMsg.textContent = `⚠️ 文件 "${fileName}.txt" 已存在`;
+                    errorMsg.style.display = 'block';
+                    errorMsg.style.color = '#f59e0b';
+                    
+                    // 如果确认按钮已经变成了覆盖按钮，则执行覆盖
+                    if (confirmBtn.dataset.confirmOverwrite === 'true') {
+                        // 执行导出
+                        formPanel.remove();
+                        await executeExportToTxt(fileName);
+                    } else {
+                        // 修改按钮为确认覆盖
+                        confirmBtn.textContent = '⚠️ 确认覆盖';
+                        confirmBtn.dataset.confirmOverwrite = 'true';
+                        confirmBtn.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+                    }
+                    return;
+                }
+            } catch (checkError) {
+                console.error('检查文件失败:', checkError);
+                // 如果检查失败，继续导出（降级处理）
+            }
+            
+            // 文件不存在，直接导出
             formPanel.remove();
             await executeExportToTxt(fileName);
         });
@@ -817,8 +1224,17 @@
     async function executeExportToTxt(fileName) {
         showLoading(true);
         try {
+            // 将uniqueIds转换回tool names
+            const selectedToolNames = [];
+            selectedTools.forEach(uniqueId => {
+                const tool = allTools.find(t => t.uniqueId === uniqueId);
+                if (tool) {
+                    selectedToolNames.push(tool.name);
+                }
+            });
+            
             const configData = {
-                selectedTools: Array.from(selectedTools),
+                selectedTools: selectedToolNames,
                 toolDescriptions: toolDescriptions,
                 includeHeader: elements.includeHeader.checked,
                 includeExamples: elements.includeExamples.checked
@@ -847,27 +1263,55 @@
         const searchTerm = elements.toolSearch.value.toLowerCase();
         const showSelectedOnly = elements.showSelectedOnly.checked;
         
-        const toolItems = elements.toolsList.querySelectorAll('.tool-item');
-        toolItems.forEach(item => {
-            const toolName = item.dataset.toolName;
-            const tool = allTools.find(t => t.name === toolName);
-            if (!tool) return;
+        // 遍历所有插件分组
+        const pluginGroups = elements.toolsList.querySelectorAll('.plugin-group');
+        pluginGroups.forEach(pluginGroup => {
+            const pluginName = pluginGroup.dataset.pluginName;
             
-            const matchesSearch = !searchTerm || 
-                tool.name.toLowerCase().includes(searchTerm) ||
-                (tool.displayName && tool.displayName.toLowerCase().includes(searchTerm)) ||
-                (tool.description && tool.description.toLowerCase().includes(searchTerm));
+            // 检查插件是否被插件过滤器隐藏
+            const pluginVisible = visiblePlugins.has(pluginName);
             
-            const matchesSelection = !showSelectedOnly || selectedTools.has(toolName);
+            if (!pluginVisible) {
+                // 如果插件被过滤掉，直接隐藏整个分组
+                pluginGroup.classList.add('hidden');
+                return;
+            }
             
-            item.classList.toggle('hidden', !(matchesSearch && matchesSelection));
+            let hasVisibleTools = false;
+            
+            // 遍历该插件分组下的所有工具项
+            const toolItems = pluginGroup.querySelectorAll('.tool-item');
+            toolItems.forEach(item => {
+                const toolId = item.dataset.toolId;
+                const tool = allTools.find(t => t.uniqueId === toolId);
+                if (!tool) return;
+                
+                const matchesSearch = !searchTerm || 
+                    tool.name.toLowerCase().includes(searchTerm) ||
+                    (tool.displayName && tool.displayName.toLowerCase().includes(searchTerm)) ||
+                    (tool.pluginName && tool.pluginName.toLowerCase().includes(searchTerm)) ||
+                    (tool.description && tool.description.toLowerCase().includes(searchTerm));
+                
+                const matchesSelection = !showSelectedOnly || selectedTools.has(toolId);
+                
+                const isVisible = matchesSearch && matchesSelection;
+                item.classList.toggle('hidden', !isVisible);
+                
+                if (isVisible) {
+                    hasVisibleTools = true;
+                }
+            });
+            
+            // 如果插件分组下没有可见的工具，隐藏整个分组
+            pluginGroup.classList.toggle('hidden', !hasVisibleTools);
         });
     }
 
     // 全选
     function selectAll() {
-        allTools.forEach(tool => selectedTools.add(tool.name));
+        allTools.forEach(tool => selectedTools.add(tool.uniqueId));
         renderToolsList();
+        updatePluginFilterCounts(); // 更新插件过滤列表的选中数量
         updateToolCount();
         updatePreview();
         enableSaveButtons();
@@ -878,6 +1322,7 @@
     function deselectAll() {
         selectedTools.clear();
         renderToolsList();
+        updatePluginFilterCounts(); // 更新插件过滤列表的选中数量
         updateToolCount();
         updatePreview();
         enableSaveButtons();
@@ -905,6 +1350,191 @@
     // 显示/隐藏加载遮罩
     function showLoading(show) {
         elements.loadingOverlay.style.display = show ? 'flex' : 'none';
+    }
+    
+    // ==================== 插件过滤功能 ====================
+    
+    // 渲染插件过滤列表
+    function renderPluginFilterList() {
+        const pluginFilterList = document.getElementById('plugin-filter-list');
+        if (!pluginFilterList) return;
+        
+        pluginFilterList.innerHTML = '';
+        
+        // 获取所有唯一的插件名称并统计工具数量
+        const pluginStats = {};
+        allTools.forEach(tool => {
+            if (!pluginStats[tool.pluginName]) {
+                pluginStats[tool.pluginName] = {
+                    displayName: tool.displayName || tool.pluginName,
+                    totalCount: 0,
+                    selectedCount: 0,
+                    isInvalid: tool.isInvalid
+                };
+            }
+            pluginStats[tool.pluginName].totalCount++;
+            // 统计已选中的工具数量
+            if (selectedTools.has(tool.uniqueId)) {
+                pluginStats[tool.pluginName].selectedCount++;
+            }
+        });
+        
+        // 按插件名排序
+        const sortedPluginNames = Object.keys(pluginStats).sort((a, b) => a.localeCompare(b));
+        
+        // 初始化所有插件为可见
+        sortedPluginNames.forEach(pluginName => {
+            visiblePlugins.add(pluginName);
+        });
+        
+        // 为每个插件创建复选框项
+        sortedPluginNames.forEach(pluginName => {
+            const stats = pluginStats[pluginName];
+            
+            const item = document.createElement('div');
+            item.className = 'plugin-filter-item';
+            item.dataset.pluginName = pluginName; // 添加数据属性方便后续更新
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = true;
+            checkbox.dataset.pluginName = pluginName;
+            
+            const label = document.createElement('label');
+            label.innerHTML = `
+                <span class="plugin-icon">${stats.isInvalid ? '⚠️' : '📦'}</span>
+                <span class="plugin-name">${stats.displayName}</span>
+                <span class="tool-count">${stats.selectedCount > 0 ? `<span class="selected-count">${stats.selectedCount}</span>/` : ''}${stats.totalCount}</span>
+            `;
+            
+            // 点击整个item也可以切换复选框
+            item.addEventListener('click', (e) => {
+                if (e.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    checkbox.dispatchEvent(new Event('change'));
+                }
+            });
+            
+            // 复选框变化时更新显示
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) {
+                    visiblePlugins.add(pluginName);
+                } else {
+                    visiblePlugins.delete(pluginName);
+                }
+                applyPluginFilter();
+            });
+            
+            item.appendChild(checkbox);
+            item.appendChild(label);
+            pluginFilterList.appendChild(item);
+        });
+        
+        // 添加展开/收起按钮的事件监听
+        const toggleBtn = document.getElementById('toggle-plugin-filter-btn');
+        const panel = document.getElementById('plugin-filter-panel');
+        
+        if (toggleBtn && panel) {
+            toggleBtn.addEventListener('click', () => {
+                const isExpanded = panel.style.display !== 'none';
+                panel.style.display = isExpanded ? 'none' : 'block';
+                toggleBtn.classList.toggle('expanded', !isExpanded);
+                
+                // 如果是展开操作，更新选中数量
+                if (!isExpanded) {
+                    updatePluginFilterCounts();
+                }
+            });
+        }
+        
+        // 全选/清空按钮事件
+        const selectAllPluginsBtn = document.getElementById('plugin-select-all-btn');
+        const deselectAllPluginsBtn = document.getElementById('plugin-deselect-all-btn');
+        
+        if (selectAllPluginsBtn) {
+            selectAllPluginsBtn.addEventListener('click', () => {
+                const checkboxes = pluginFilterList.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(cb => {
+                    cb.checked = true;
+                    const pluginName = cb.dataset.pluginName;
+                    if (pluginName) {
+                        visiblePlugins.add(pluginName);
+                    }
+                });
+                applyPluginFilter();
+            });
+        }
+        
+        if (deselectAllPluginsBtn) {
+            deselectAllPluginsBtn.addEventListener('click', () => {
+                const checkboxes = pluginFilterList.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(cb => {
+                    cb.checked = false;
+                    const pluginName = cb.dataset.pluginName;
+                    if (pluginName) {
+                        visiblePlugins.delete(pluginName);
+                    }
+                });
+                applyPluginFilter();
+            });
+        }
+    }
+    
+    // 应用插件过滤
+    function applyPluginFilter() {
+        const pluginGroups = elements.toolsList.querySelectorAll('.plugin-group');
+        
+        pluginGroups.forEach(pluginGroup => {
+            const pluginName = pluginGroup.dataset.pluginName;
+            const isVisible = visiblePlugins.has(pluginName);
+            
+            if (isVisible) {
+                pluginGroup.classList.remove('hidden');
+            } else {
+                pluginGroup.classList.add('hidden');
+            }
+        });
+        
+        // 同时应用搜索过滤
+        filterTools();
+    }
+    
+    // 更新插件过滤列表中的选中数量
+    function updatePluginFilterCounts() {
+        const pluginFilterList = document.getElementById('plugin-filter-list');
+        if (!pluginFilterList) return;
+        
+        // 统计每个插件的已选中工具数量
+        const pluginSelectedCounts = {};
+        allTools.forEach(tool => {
+            if (!pluginSelectedCounts[tool.pluginName]) {
+                pluginSelectedCounts[tool.pluginName] = {
+                    total: 0,
+                    selected: 0
+                };
+            }
+            pluginSelectedCounts[tool.pluginName].total++;
+            if (selectedTools.has(tool.uniqueId)) {
+                pluginSelectedCounts[tool.pluginName].selected++;
+            }
+        });
+        
+        // 更新每个插件过滤项的显示
+        const items = pluginFilterList.querySelectorAll('.plugin-filter-item');
+        items.forEach(item => {
+            const pluginName = item.dataset.pluginName;
+            if (!pluginName || !pluginSelectedCounts[pluginName]) return;
+            
+            const counts = pluginSelectedCounts[pluginName];
+            const countSpan = item.querySelector('.tool-count');
+            if (countSpan) {
+                if (counts.selected > 0) {
+                    countSpan.innerHTML = `<span class="selected-count">${counts.selected}</span>/${counts.total}`;
+                } else {
+                    countSpan.textContent = counts.total;
+                }
+            }
+        });
     }
 
     // 页面加载完成后初始化

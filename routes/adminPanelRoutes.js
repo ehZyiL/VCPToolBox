@@ -1438,6 +1438,27 @@ module.exports = function(DEBUG_MODE, dailyNoteRootPath, pluginManager, getCurre
         }
     });
 
+    // 检查文件是否存在
+    adminApiRouter.get('/tool-list-editor/check-file/:fileName', async (req, res) => {
+        try {
+            const fileName = req.params.fileName;
+            const tvsTxtDir = path.join(PROJECT_BASE_PATH, 'TVStxt');
+            const outputPath = path.join(tvsTxtDir, `${fileName}.txt`);
+            
+            try {
+                await fs.access(outputPath);
+                // 文件存在
+                res.json({ exists: true });
+            } catch {
+                // 文件不存在
+                res.json({ exists: false });
+            }
+        } catch (error) {
+            console.error('[AdminAPI] Error checking file:', error);
+            res.status(500).json({ error: 'Failed to check file', details: error.message });
+        }
+    });
+
     // 导出为txt文件
     adminApiRouter.post('/tool-list-editor/export/:fileName', async (req, res) => {
         try {
@@ -1481,16 +1502,73 @@ module.exports = function(DEBUG_MODE, dailyNoteRootPath, pluginManager, getCurre
                 }
             }
             
-            // 为每个选中的工具生成说明
-            tools.forEach((tool, index) => {
-                const desc = toolDescriptions[tool.name] || tool.description || '暂无描述';
+            // 按插件分组工具，以节省Tokens
+            const toolsByPlugin = {};
+            tools.forEach(tool => {
+                if (!toolsByPlugin[tool.pluginName]) {
+                    toolsByPlugin[tool.pluginName] = [];
+                }
+                toolsByPlugin[tool.pluginName].push(tool);
+            });
+            
+            // 按插件名排序
+            const sortedPluginNames = Object.keys(toolsByPlugin).sort((a, b) => a.localeCompare(b));
+            
+            // 为每个插件生成说明
+            let pluginIndex = 0;
+            sortedPluginNames.forEach(pluginName => {
+                pluginIndex++;
+                const pluginTools = toolsByPlugin[pluginName];
                 
-                output += `${index + 1}. ${tool.displayName} (${tool.name})\r\n`;
-                output += `插件: ${tool.pluginName}\r\n`;
-                output += `说明: ${desc}\r\n`;
+                // 获取插件显示名称（使用第一个工具的displayName）
+                const pluginDisplayName = pluginTools[0].displayName || pluginName;
                 
-                if (includeExamples && tool.example) {
-                    output += `\r\n示例:\r\n${tool.example}\r\n`;
+                // 如果该插件只有一个工具
+                if (pluginTools.length === 1) {
+                    const tool = pluginTools[0];
+                    const desc = toolDescriptions[tool.name] || tool.description || '暂无描述';
+                    
+                    output += `${pluginIndex}. ${pluginDisplayName} (${tool.name})\r\n`;
+                    output += `插件: ${pluginName}\r\n`;
+                    output += `说明: ${desc}\r\n`;
+                    
+                    if (includeExamples && tool.example) {
+                        output += `\r\n示例:\r\n${tool.example}\r\n`;
+                    }
+                } else {
+                    // 如果该插件有多个工具，合并显示
+                    output += `${pluginIndex}. ${pluginDisplayName}\r\n`;
+                    output += `插件: ${pluginName}\r\n`;
+                    output += `该插件包含 ${pluginTools.length} 个工具调用:\r\n\r\n`;
+                    
+                    pluginTools.forEach((tool, toolIdx) => {
+                        const desc = toolDescriptions[tool.name] || tool.description || '暂无描述';
+                        
+                        output += `  ${pluginIndex}.${toolIdx + 1} ${tool.name}\r\n`;
+                        
+                        // 处理说明部分，保持原有的多行格式
+                        const descLines = desc.split('\n');
+                        descLines.forEach((line, lineIdx) => {
+                            if (lineIdx === 0) {
+                                output += `  说明: ${line}\r\n`;
+                            } else {
+                                output += `  ${line}\r\n`;
+                            }
+                        });
+                        
+                        if (includeExamples && tool.example) {
+                            output += `\r\n`;
+                            // 将示例内容缩进
+                            const exampleLines = tool.example.split('\n');
+                            exampleLines.forEach(line => {
+                                output += `  ${line}\r\n`;
+                            });
+                        }
+                        
+                        if (toolIdx < pluginTools.length - 1) {
+                            output += '\r\n';
+                        }
+                    });
                 }
                 
                 output += '\r\n' + '----------------------------------------' + '\r\n\r\n';
