@@ -79,9 +79,6 @@ web_modules/
 .env.production.local
 .env.local
 
-# debug variable files
-debug-*.json
-
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
@@ -152,6 +149,17 @@ Plugin/WeatherReporter/weather_cache.json
 Plugin/VCPLog/log/VCPlog.txt
 DebugLog/
 dailynote/
+Plugin/DailyHot/dailyhot_cache.md
+Plugin/TavilySearch/.vcptoolbox_tavily_cache.json
+Plugin/ImageProcessor/multimodal_cache.json
+Plugin/UserAuth/code.bin
+Plugin/VCPLog/log/VCPlog.txt
+Plugin/WeatherReporter/weather_cache.json
+Plugin/UserAuth/code.bin
+Plugin/MCPOMonitor/mcpo_status_cache.txt
+Plugin/MCPOMonitor/mcpo_status_cache.json
+/VectorStore
+ip_blacklist.json
 
 # WeatherReporter cache files
 Plugin/WeatherReporter/city_cache.txt
@@ -170,3 +178,9 @@ image/通用表情包/*
 image/fluxgen/
 image/jinaai/
 image/geminiimagegen/
+
+# macOS & app files
+.DS_Store
+**/.DS_Store
+.DS_Store?
+/.obsidian
