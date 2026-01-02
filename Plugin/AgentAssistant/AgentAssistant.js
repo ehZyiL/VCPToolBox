@@ -32,7 +32,8 @@ function initialize(config, dependencies) {
     MAX_HISTORY_ROUNDS = parseInt(config.AGENT_ASSISTANT_MAX_HISTORY_ROUNDS || '7', 10);
     CONTEXT_TTL_HOURS = parseInt(config.AGENT_ASSISTANT_CONTEXT_TTL_HOURS || '24', 10);
     DEBUG_MODE = String(config.DebugMode || 'false').toLowerCase() === 'true';
-    VCP_API_TARGET_URL = `http://localhost:${VCP_SERVER_PORT}/v1`;
+    // 使用 127.0.0.1 避开某些系统上 localhost 解析到 IPv6 (::1) 导致的延迟
+    VCP_API_TARGET_URL = `http://127.0.0.1:${VCP_SERVER_PORT}/v1`;
 
     if (DEBUG_MODE) {
         console.error(`[AgentAssistant Service] Initializing...`);
@@ -212,7 +213,7 @@ async function processToolCall(args) {
         return { status: "error", error: errorMsg };
     }
 
-    const { agent_name, prompt, timely_contact, temporary_contact } = args;
+    const { agent_name, prompt, timely_contact, temporary_contact, maid } = args;
     if (!agent_name || !prompt) {
         return { status: "error", error: "Missing 'agent_name' or 'prompt' in request." };
     }
@@ -236,7 +237,7 @@ async function processToolCall(args) {
             const schedulerPayload = {
                 schedule_time: targetDate.toISOString(),
                 task_id: `task-${targetDate.getTime()}-${uuidv4()}`,
-                tool_call: { tool_name: "AgentAssistant", arguments: { agent_name, prompt } }
+                tool_call: { tool_name: "AgentAssistant", arguments: { agent_name, prompt, maid } }
             };
             if (DEBUG_MODE) console.error(`[AgentAssistant Service] Calling /v1/schedule_task with payload:`, JSON.stringify(schedulerPayload, null, 2));
 
@@ -248,7 +249,7 @@ async function processToolCall(args) {
             if (response.data && response.data.status === "success") {
                 const formattedDate = `${targetDate.getFullYear()}年${targetDate.getMonth() + 1}月${targetDate.getDate()}日 ${targetDate.getHours().toString().padStart(2, '0')}:${targetDate.getMinutes().toString().padStart(2, '0')}`;
                 const friendlyReceipt = `您预定于 ${formattedDate} 发给 ${agent_name} 的未来通讯已经被系统记录，届时会自动发送。`;
-                return { status: "success", result: friendlyReceipt };
+                return { status: "success", result: [{ type: "text", text: friendlyReceipt }] };
             } else {
                 const errorMessage = `调度任务失败: ${response.data?.error || '服务器返回未知错误'}`;
                 if (DEBUG_MODE) console.error(`[AgentAssistant Service] ${errorMessage}`, response.data);
@@ -267,7 +268,12 @@ async function processToolCall(args) {
     const useContext = !temporary_contact; // Check if temporary_contact is provided and truthy
     const userSessionId = args.session_id || `agent_${agentConfig.baseName}_default_user_session`;
     try {
-        const processedUserPrompt = await replacePlaceholdersInUserPrompt(prompt, agentConfig);
+        // 注入来源提示词，防止 AI 之间产生“套娃”式工具调用
+        const senderName = maid || "系统助手";
+        const communicationTip = `[Tips:这是一条来自AgentAssistant通讯中心 ${senderName} 的联络，你可以直接正常回复而无需通过调用AA插件的方式进行回复]\n\n`;
+        const finalPrompt = communicationTip + prompt;
+
+        const processedUserPrompt = await replacePlaceholdersInUserPrompt(finalPrompt, agentConfig);
         
         let history = [];
         if (useContext) {
@@ -333,15 +339,24 @@ async function processToolCall(args) {
             console.error('[AgentAssistant Service] Error broadcasting VCP Info:', e.message);
         }
         
-        return { status: "success", result: assistantResponseContent };
+        return { status: "success", result: [{ type: "text", text: assistantResponseContent }] };
 
     } catch (error) {
         let errorMessage = `调用 Agent '${agent_name}' 时发生错误。`;
         if (axios.isAxiosError(error)) {
-            errorMessage += ` API Status: ${error.response?.status}.`;
-            if (error.response?.data?.error?.message) errorMessage += ` Message: ${error.response.data.error.message}`;
-            else if (typeof error.response?.data === 'string') errorMessage += ` Data: ${error.response.data.substring(0,150)}`;
-            else if (error.message.includes('timeout')) errorMessage += ` Request to VCP server timed out.`;
+            if (error.response) {
+                errorMessage += ` API Status: ${error.response.status}.`;
+                if (error.response.data?.error?.message) errorMessage += ` Message: ${error.response.data.error.message}`;
+                else if (typeof error.response.data === 'string') errorMessage += ` Data: ${error.response.data.substring(0,150)}`;
+            } else if (error.request) {
+                // 请求已发出但未收到响应
+                errorMessage += ` No response received. Code: ${error.code || 'N/A'}.`;
+                if (error.message && error.message.includes('timeout')) {
+                    errorMessage += ` Request timed out after ${error.config?.timeout}ms. (Local VCP Server is too slow to respond)`;
+                }
+            } else {
+                errorMessage += ` Request setup error: ${error.message}`;
+            }
         } else if (error instanceof Error) {
             errorMessage += ` ${error.message}`;
         }
