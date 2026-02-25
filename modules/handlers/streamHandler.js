@@ -55,6 +55,19 @@ class StreamHandler {
         let rawResponseDataThisTurn = '';
         let sseLineBuffer = '';
         let streamAborted = false;
+        let keepAliveTimer = null;
+
+        // 🌟 核心修复：注入 SSE 幽灵心跳保活，防止上游卡顿时浏览器假死
+        keepAliveTimer = setInterval(() => {
+          if (!res.writableEnded && !res.destroyed) {
+            try {
+              res.write(': vcp-keepalive\n\n');
+              if (DEBUG_MODE) console.log('[Stream KeepAlive] Sent keepalive comment.');
+            } catch (e) {
+              // Ignore errors
+            }
+          }
+        }, 5000); // 5秒发一次心跳
 
         const abortHandler = () => {
           streamAborted = true;
@@ -70,7 +83,7 @@ class StreamHandler {
 
         aiResponse.body.on('data', chunk => {
           if (streamAborted) return;
-          
+
           const chunkString = decoder.write(chunk);
           rawResponseDataThisTurn += chunkString;
           sseLineBuffer += chunkString;
@@ -82,7 +95,7 @@ class StreamHandler {
 
           for (const line of lines) {
             const trimmedLine = line.trim();
-            
+
             // 1. 转发逻辑：只要不是 [DONE] 就立即转发
             if (!res.writableEnded && !res.destroyed) {
               // 必须保留空行，因为 SSE 依靠空行 (\n\n) 来分隔消息块
@@ -108,26 +121,27 @@ class StreamHandler {
                     if (delta.content) collectedContentThisTurn += delta.content;
                     if (delta.reasoning_content) collectedContentThisTurn += delta.reasoning_content;
                   }
-                } catch (e) {}
+                } catch (e) { }
               }
             }
           }
         });
 
         aiResponse.body.on('end', () => {
+          if (keepAliveTimer) clearInterval(keepAliveTimer);
           const remainingString = decoder.end();
           if (remainingString) {
             rawResponseDataThisTurn += remainingString;
             sseLineBuffer += remainingString;
           }
-          
+
           // 处理最后剩余的 buffer 并转发
           if (sseLineBuffer.length > 0) {
             const trimmedLine = sseLineBuffer.trim();
             if (!res.writableEnded && !res.destroyed && trimmedLine !== 'data: [DONE]' && trimmedLine !== 'data:[DONE]') {
               try {
                 res.write(sseLineBuffer + '\n');
-              } catch (e) {}
+              } catch (e) { }
             }
 
             if (trimmedLine.startsWith('data: ')) {
@@ -140,7 +154,7 @@ class StreamHandler {
                     if (delta.content) collectedContentThisTurn += delta.content;
                     if (delta.reasoning_content) collectedContentThisTurn += delta.reasoning_content;
                   }
-                } catch (e) {}
+                } catch (e) { }
               }
             }
           }
@@ -150,6 +164,7 @@ class StreamHandler {
         });
 
         aiResponse.body.on('error', streamError => {
+          if (keepAliveTimer) clearInterval(keepAliveTimer);
           if (abortController?.signal) abortController.signal.removeEventListener('abort', abortHandler);
           if (streamAborted || streamError.name === 'AbortError' || streamError.type === 'aborted') {
             resolve({ content: collectedContentThisTurn, raw: rawResponseDataThisTurn });
@@ -160,7 +175,7 @@ class StreamHandler {
             try {
               res.write(`data: ${JSON.stringify({ error: 'STREAM_READ_ERROR', message: streamError.message })}\n\n`);
               res.end();
-            } catch (e) {}
+            } catch (e) { }
           }
           reject(streamError);
         });
@@ -212,7 +227,7 @@ class StreamHandler {
             res.write('data: [DONE]\n\n', () => res.end());
           } catch (writeError) {
             console.error('[VCP Stream Loop] Failed to write final chunk:', writeError.message);
-            if (!res.writableEnded && !res.destroyed) try { res.end(); } catch (e) {}
+            if (!res.writableEnded && !res.destroyed) try { res.end(); } catch (e) { }
           }
         }
         break;
@@ -226,7 +241,7 @@ class StreamHandler {
         try {
           const result = await toolExecutor.execute(toolCall, clientIp);
           const isError = !result.success || (result.raw && this.context.isToolResultError(result.raw));
-          
+
           if (isError) {
             archeryErrorContents.push({
               type: 'text',
@@ -234,8 +249,9 @@ class StreamHandler {
             });
           }
 
-          if (shouldShowVCP && !res.writableEnded && isError) {
-            vcpInfoHandler.streamVcpInfo(res, originalBody.model, toolCall.name, 'error', result.raw || result.error, abortController);
+          const forceThisOne = !shouldShowVCP && toolCall.markHistory;
+          if ((shouldShowVCP || forceThisOne) && !res.writableEnded && (isError || forceThisOne)) {
+            vcpInfoHandler.streamVcpInfo(res, originalBody.model, result.success ? 'success' : 'error', toolCall.name, result.raw || result.error, abortController);
           }
         } catch (e) {
           console.error(`[VCP Stream Loop Archery Error] ${toolCall.name}:`, e);
@@ -246,7 +262,7 @@ class StreamHandler {
       if (normalCalls.length === 0 && archeryErrorContents.length > 0) {
         const errorPayload = `<!-- VCP_TOOL_PAYLOAD -->\n${JSON.stringify(archeryErrorContents)}`;
         currentMessagesForLoop.push({ role: 'user', content: errorPayload });
-        
+
         if (!res.writableEnded && !res.destroyed) {
           try {
             res.write(`data: ${JSON.stringify({
@@ -256,7 +272,7 @@ class StreamHandler {
               model: originalBody.model,
               choices: [{ index: 0, delta: { content: '\n' }, finish_reason: null }],
             })}\n\n`);
-          } catch (e) {}
+          } catch (e) { }
         }
 
         const nextAiAPIResponse = await fetchWithRetry(
@@ -291,9 +307,9 @@ class StreamHandler {
               choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
             })}\n\n`);
             res.write('data: [DONE]\n\n', () => {
-              try { res.end(); } catch (e) {}
+              try { res.end(); } catch (e) { }
             });
-          } catch (e) {}
+          } catch (e) { }
         }
         break;
       }
@@ -304,29 +320,30 @@ class StreamHandler {
       if (archeryErrorContents.length > 0) combinedToolResultsForAI.push(...archeryErrorContents);
 
       // VCP 信息展示
-      if (shouldShowVCP) {
-        for (let i = 0; i < normalCalls.length; i++) {
-          const result = toolResults[i];
-          if (!res.writableEnded && !res.destroyed) {
-            vcpInfoHandler.streamVcpInfo(res, originalBody.model, normalCalls[i].name, result.success ? 'success' : 'error', result.raw || result.error, abortController);
-          }
+      for (let i = 0; i < normalCalls.length; i++) {
+        const toolCall = normalCalls[i];
+        const result = toolResults[i];
+        const forceThisOne = !shouldShowVCP && toolCall.markHistory;
+
+        if ((shouldShowVCP || forceThisOne) && !res.writableEnded && !res.destroyed) {
+          vcpInfoHandler.streamVcpInfo(res, originalBody.model, toolCall.name, result.success ? 'success' : 'error', result.raw || result.error, abortController);
         }
       }
 
       // RAG 刷新
-      const toolResultsTextForRAG = JSON.stringify(combinedToolResultsForAI, (k, v) => 
+      const toolResultsTextForRAG = JSON.stringify(combinedToolResultsForAI, (k, v) =>
         (k === 'url' || k === 'image_url') && typeof v === 'string' && v.startsWith('data:') ? "[Omitted]" : v
       );
 
       if (RAGMemoRefresh) {
-        currentMessagesForLoop = await _refreshRagBlocksIfNeeded(currentMessagesForLoop, { 
-          lastAiMessage: currentAIContentForLoop, 
-          toolResultsText: toolResultsTextForRAG 
+        currentMessagesForLoop = await _refreshRagBlocksIfNeeded(currentMessagesForLoop, {
+          lastAiMessage: currentAIContentForLoop,
+          toolResultsText: toolResultsTextForRAG
         }, pluginManager, DEBUG_MODE);
       }
 
       const hasImage = combinedToolResultsForAI.some(item => item.type === 'image_url');
-      const finalToolPayloadForAI = hasImage 
+      const finalToolPayloadForAI = hasImage
         ? [{ type: 'text', text: `<!-- VCP_TOOL_PAYLOAD -->\nResults:` }, ...combinedToolResultsForAI]
         : `<!-- VCP_TOOL_PAYLOAD -->\n${toolResultsTextForRAG}`;
 
@@ -339,7 +356,7 @@ class StreamHandler {
             object: 'chat.completion.chunk',
             choices: [{ index: 0, delta: { content: '\n' }, finish_reason: null }],
           })}\n\n`);
-        } catch (e) {}
+        } catch (e) { }
       }
 
       const nextAiAPIResponse = await fetchWithRetry(
@@ -361,7 +378,7 @@ class StreamHandler {
 
       let nextAIResponseData = await processAIResponseStreamHelper(nextAiAPIResponse, false);
       currentAIContentForLoop = nextAIResponseData.content;
-      
+
       // 记录日志
       handleDiaryFromAIResponse(nextAIResponseData.raw).catch(e =>
         console.error(`[VCP Stream Loop] Error in diary handling for depth ${recursionDepth}:`, e),
@@ -378,9 +395,9 @@ class StreamHandler {
           choices: [{ index: 0, delta: {}, finish_reason: 'length' }],
         })}\n\n`);
         res.write('data: [DONE]\n\n', () => {
-          try { res.end(); } catch (e) {}
+          try { res.end(); } catch (e) { }
         });
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 }
